@@ -1,0 +1,90 @@
+"use client";
+
+import { useState } from "react";
+
+import { checkReadOnly } from "@/lib/sql/read-only";
+import { SaveForm } from "./save-form";
+
+type Props = {
+  sql: string;
+  manual: boolean;
+  running: boolean;
+  canRegenerate: boolean;
+  onChange: (sql: string) => void;
+  onRegenerate: () => void;
+  onRun: () => void;
+  onSave: (name: string) => void;
+};
+
+export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onRegenerate, onRun, onSave }: Props) {
+  const [confirming, setConfirming] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const check = checkReadOnly(sql);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(sql);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard indisponível.
+    }
+  }
+
+  return (
+    <section className="panel flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="label">SQL</span>
+        <span
+          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${manual ? "bg-amber-500/15 text-amber-300" : "bg-sky-500/15 text-sky-300"}`}
+        >
+          {manual ? "editado à mão" : "gerado pelo builder"}
+        </span>
+        {manual &&
+          (confirming ? (
+            <span className="flex items-center gap-1 text-xs text-zinc-300">
+              Descartar a edição?
+              <button
+                type="button"
+                className="btn"
+                disabled={!canRegenerate}
+                title={canRegenerate ? undefined : "Corrija os problemas do builder primeiro"}
+                onClick={() => {
+                  setConfirming(false);
+                  onRegenerate();
+                }}
+              >
+                Sim, regenerar
+              </button>
+              <button type="button" className="btn-ghost" onClick={() => setConfirming(false)}>
+                Cancelar
+              </button>
+            </span>
+          ) : (
+            <button type="button" className="btn-ghost" onClick={() => setConfirming(true)}>
+              ↺ regenerar do builder
+            </button>
+          ))}
+        <div className="ml-auto flex items-center gap-2">
+          <SaveForm label="Salvar consulta" onSave={onSave} />
+          <button type="button" className="btn-ghost" disabled={!sql} onClick={copy}>
+            {copied ? "Copiado" : "Copiar"}
+          </button>
+          <button type="button" className="btn-primary" disabled={running || !check.ok} onClick={onRun}>
+            {running ? "Rodando…" : "Rodar"}
+            <kbd className="ml-2 hidden text-[10px] opacity-70 sm:inline">Ctrl+Enter</kbd>
+          </button>
+        </div>
+      </div>
+      <textarea
+        aria-label="SQL"
+        spellCheck={false}
+        className="input min-h-64 resize-y font-mono text-xs leading-relaxed"
+        placeholder="Monte a consulta no builder ou escreva o SQL aqui."
+        value={sql}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {sql && !check.ok && <p className="text-xs text-amber-300">{check.reason}</p>}
+    </section>
+  );
+}
