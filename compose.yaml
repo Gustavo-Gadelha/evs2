@@ -1,0 +1,18 @@
+services:
+  snk-assistant:
+    build: .
+    ports:
+      # Só loopback: nunca "3100:3100", que exporia a ferramenta (e a sessão no Sankhya) na rede.
+      - "127.0.0.1:3100:3100"
+    env_file: .env.local
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - next:/app/.next
+
+volumes:
+  node_modules:
+  next:
