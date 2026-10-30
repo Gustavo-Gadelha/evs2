@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   columnFilteringFeature,
   columnVisibilityFeature,
@@ -71,6 +71,21 @@ function columnWidths({ columns, rows }: QueryResult): number[] {
 
 export function ResultTable({ result }: { result: QueryResult }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullscreen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [fullscreen]);
 
   const columns = useMemo(
     () =>
@@ -115,7 +130,7 @@ export function ResultTable({ result }: { result: QueryResult }) {
   const hasFilters = Boolean(table.state.globalFilter) || table.state.columnFilters.length > 0;
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col gap-2 bg-zinc-950 p-4" : "flex min-w-0 flex-col gap-2"}>
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <input
           aria-label="Buscar em todas as colunas"
@@ -141,7 +156,11 @@ export function ResultTable({ result }: { result: QueryResult }) {
             {rows.length} de {result.rows.length} linha(s)
           </span>
         )}
-        <details className="relative ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+        <button type="button" className="btn-ghost" aria-pressed={fullscreen} onClick={() => setFullscreen((value) => !value)}>
+          {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
+        </button>
+        <details className="relative">
           <summary className="btn-ghost cursor-pointer select-none list-none">
             Colunas ({visibleColumns.length}/{result.columns.length})
           </summary>
@@ -161,9 +180,13 @@ export function ResultTable({ result }: { result: QueryResult }) {
             ))}
           </div>
         </details>
+        </div>
       </div>
 
-      <div ref={scrollRef} className="max-h-[60vh] overflow-auto rounded border border-zinc-800">
+      <div
+        ref={scrollRef}
+        className={`overflow-auto rounded border border-zinc-800 ${fullscreen ? "min-h-0 flex-1" : "max-h-[60vh]"}`}
+      >
         <table className="grid font-mono text-xs" style={{ width: totalWidth }}>
           <thead className="sticky top-0 z-10 grid bg-zinc-900">
             {table.getHeaderGroups().map((group) => (
