@@ -65,52 +65,41 @@ export function OrderByClause({ state, onChange }: Props) {
 }
 
 export function LimitClause({ state, onChange }: Props) {
-  const { limit } = state;
-  const setLimit = (patch: Partial<Limit>) => onChange({ limit: { ...(limit ?? DEFAULT_LIMIT), ...patch } });
+  // Desligar o limite é pelo "omitir" do bloco; consultas antigas sem limite abrem com os valores padrão.
+  const limit = state.limit ?? DEFAULT_LIMIT;
+  const setLimit = (patch: Partial<Limit>) => onChange({ limit: { ...limit, ...patch } });
 
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-300">
       <label className="flex items-center gap-1.5">
+        linhas
         <input
-          type="checkbox"
-          checked={limit !== null}
-          onChange={(event) => onChange({ limit: event.target.checked ? { ...DEFAULT_LIMIT } : null })}
+          type="number"
+          min={1}
+          className="input w-24"
+          value={Number.isFinite(limit.rows) ? limit.rows : ""}
+          onChange={(event) => setLimit({ rows: event.target.valueAsNumber })}
         />
-        limitar
       </label>
-      {limit && (
-        <>
-          <label className="flex items-center gap-1.5">
-            linhas
-            <input
-              type="number"
-              min={1}
-              className="input w-24"
-              value={Number.isFinite(limit.rows) ? limit.rows : ""}
-              onChange={(event) => setLimit({ rows: event.target.valueAsNumber })}
-            />
-          </label>
-          <label className="flex items-center gap-1.5">
-            offset
-            <input
-              type="number"
-              min={0}
-              className="input w-24"
-              value={Number.isFinite(limit.offset) ? limit.offset : ""}
-              onChange={(event) => setLimit({ offset: event.target.valueAsNumber })}
-            />
-          </label>
-          <select
-            aria-label="Estilo do limite"
-            className="input"
-            value={limit.style}
-            onChange={(event) => setLimit({ style: event.target.value as Limit["style"] })}
-          >
-            <option value="fetch">FETCH NEXT (Oracle 12c+)</option>
-            <option value="rownum">ROWNUM (Oracle 11g)</option>
-          </select>
-        </>
-      )}
+      <label className="flex items-center gap-1.5">
+        offset
+        <input
+          type="number"
+          min={0}
+          className="input w-24"
+          value={Number.isFinite(limit.offset) ? limit.offset : ""}
+          onChange={(event) => setLimit({ offset: event.target.valueAsNumber })}
+        />
+      </label>
+      <select
+        aria-label="Estilo do limite"
+        className="input"
+        value={limit.style}
+        onChange={(event) => setLimit({ style: event.target.value as Limit["style"] })}
+      >
+        <option value="fetch">FETCH NEXT (Oracle 12c+)</option>
+        <option value="rownum">ROWNUM (Oracle 11g)</option>
+      </select>
     </div>
   );
 }
