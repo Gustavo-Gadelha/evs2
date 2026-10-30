@@ -80,6 +80,7 @@ function condition(cond: Cond, section: Section, problems: Problems): string | n
 function conditions(group: CondGroup, section: Section, problems: Problems): string[] {
   const parts: string[] = [];
   for (const item of group.items) {
+    if (item.off) continue;
     if ("items" in item) {
       const inner = conditions(item, section, problems);
       if (inner.length === 1) parts.push(inner[0]);
@@ -136,9 +137,9 @@ function tableRef(table: string, alias: string, section: Section, problems: Prob
 // Expressões do GROUP BY: no modo automático, todas as colunas não agregadas quando há agregação no SELECT.
 export function groupByExprs(state: QueryState): string[] {
   if (state.groupBy.mode === "manual") return state.groupBy.exprs.map((expr) => expr.trim()).filter(Boolean);
-  if (!state.select.some((item) => item.expr.kind === "agg")) return [];
+  if (!state.select.some((item) => !item.off && item.expr.kind === "agg")) return [];
   return state.select.flatMap((item) =>
-    item.expr.kind === "raw" && item.expr.sql.trim() ? [item.expr.sql.trim()] : [],
+    !item.off && item.expr.kind === "raw" && item.expr.sql.trim() ? [item.expr.sql.trim()] : [],
   );
 }
 
@@ -178,8 +179,11 @@ function applyLimit(sql: string, limit: Limit | null, problems: Problems): strin
 export function toOracleSql(state: QueryState): SqlResult {
   const problems: Problems = [];
   const lines: string[] = [];
+  // Seções omitidas saem do SQL sem sair do estado; os problemas delas também são ignorados.
+  const omitted = new Set(state.omit ?? []);
 
-  const columns = state.select.flatMap((item) => {
+  const columns = (omitted.has("select") ? [] : state.select).flatMap((item) => {
+    if (item.off) return [];
     const sql = expression(item.expr, problems);
     return sql ? [`${sql}${columnAlias(item.alias)}`] : [];
   });
@@ -193,8 +197,8 @@ export function toOracleSql(state: QueryState): SqlResult {
     if (ref) lines.push(`FROM ${ref}`);
   }
 
-  for (const join of state.joins) {
-    if (!join.table.trim()) continue;
+  for (const join of omitted.has("joins") ? [] : state.joins) {
+    if (join.off || !join.table.trim()) continue;
     const ref = tableRef(join.table, join.alias, "joins", problems);
     const on = conditions(join.on, "joins", problems);
     if (on.length === 0) {
@@ -204,13 +208,13 @@ export function toOracleSql(state: QueryState): SqlResult {
     if (ref) lines.push(`  ${join.type} JOIN ${ref} ON ${on.join(` ${join.on.op} `)}`);
   }
 
-  const where = conditionClause("WHERE", state.where, "where", problems);
+  const where = omitted.has("where") ? null : conditionClause("WHERE", state.where, "where", problems);
   if (where) lines.push(where);
 
-  const groupBy = groupByExprs(state);
+  const groupBy = omitted.has("groupBy") ? [] : groupByExprs(state);
   if (groupBy.length) lines.push(`GROUP BY\n${groupBy.map((expr) => `  ${expr}`).join(",\n")}`);
 
-  const having = conditionClause("HAVING", state.having, "having", problems);
+  const having = omitted.has("having") ? null : conditionClause("HAVING", state.having, "having", problems);
   if (having) {
     if (groupBy.length) lines.push(having);
     else
@@ -220,12 +224,12 @@ export function toOracleSql(state: QueryState): SqlResult {
       });
   }
 
-  const order = state.orderBy.flatMap((item) => {
-    const expr = item.expr.trim();
+  const order = (omitted.has("orderBy") ? [] : state.orderBy).flatMap((item) => {
+    const expr = item.off ? "" : item.expr.trim();
     return expr ? [`${expr} ${item.dir}${item.nulls ? ` NULLS ${item.nulls}` : ""}`] : [];
   });
   if (order.length) lines.push(`ORDER BY ${order.join(", ")}`);
 
-  const sql = applyLimit(lines.join("\n"), state.limit, problems);
+  const sql = applyLimit(lines.join("\n"), omitted.has("limit") ? null : state.limit, problems);
   return { sql: problems.length ? "" : sql, problems };
 }
