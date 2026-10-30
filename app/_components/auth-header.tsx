@@ -4,11 +4,12 @@ type Props = {
   status: AuthStatus | null;
   busy: boolean;
   onNewQuery: () => void;
+  onOpenDictionary: () => void;
   onLogin: () => void;
   onLogout: () => void;
 };
 
-export function AuthHeader({ status, busy, onNewQuery, onLogin, onLogout }: Props) {
+export function AuthHeader({ status, busy, onNewQuery, onOpenDictionary, onLogin, onLogout }: Props) {
   const authenticated = status?.authenticated ?? false;
 
   return (
@@ -21,6 +22,9 @@ export function AuthHeader({ status, busy, onNewQuery, onLogin, onLogout }: Prop
 
       <button type="button" className="btn" onClick={onNewQuery}>
         Nova consulta
+      </button>
+      <button type="button" className="btn" onClick={onOpenDictionary}>
+        Dicionário
       </button>
 
       <div className="ml-auto flex items-center gap-3">

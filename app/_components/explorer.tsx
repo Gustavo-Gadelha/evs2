@@ -9,6 +9,7 @@ import { checkReadOnly } from "@/lib/sql/read-only";
 import { toOracleSql } from "@/lib/sql/to-oracle";
 import type { AuthStatus, QueryResult } from "@/lib/types";
 import { AuthHeader } from "./auth-header";
+import { DictionaryBrowser } from "./dictionary-browser";
 import { Builder } from "./builder/builder";
 import { ResultView } from "./result-view";
 import { Sidebar } from "./sidebar";
@@ -30,6 +31,7 @@ export function Explorer() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [storeError, setStoreError] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [dictionaryOpen, setDictionaryOpen] = useState(false);
   const [saved, setSaved] = useState<SavedQuery[]>([]);
 
   const generated = useMemo(() => toOracleSql(queryState), [queryState]);
@@ -171,9 +173,11 @@ export function Explorer() {
         status={status}
         busy={authBusy}
         onNewQuery={newQuery}
+        onOpenDictionary={() => setDictionaryOpen(true)}
         onLogin={() => authAction("/api/sankhya/login")}
         onLogout={() => authAction("/api/sankhya/logout")}
       />
+      {dictionaryOpen && <DictionaryBrowser onClose={() => setDictionaryOpen(false)} />}
       {authError && (
         <div className="border-b border-red-900 bg-red-950/60 px-4 py-2 text-sm text-red-200">{authError}</div>
       )}
