@@ -16,7 +16,7 @@ export function OrderByClause({ state, onChange }: Props) {
   return (
     <>
       {items.map((item, index) => (
-        <div key={index} className="flex items-center gap-1.5">
+        <div key={index} className={`flex items-center gap-1.5 ${item.off ? "opacity-50" : ""}`}>
           <ExprInput
             label="Expressão do ORDER BY"
             className="min-w-0 flex-1"
@@ -48,6 +48,8 @@ export function OrderByClause({ state, onChange }: Props) {
             count={items.length}
             onMove={(to) => setItems(move(items, index, to))}
             onRemove={() => setItems(removeAt(items, index))}
+            off={item.off}
+            onToggleOff={() => update(index, { off: !item.off })}
           />
         </div>
       ))}

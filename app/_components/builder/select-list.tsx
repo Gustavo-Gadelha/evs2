@@ -53,7 +53,7 @@ export function SelectClause({ state, onChange }: Props) {
       </label>
       {items.length === 0 && <p className="text-xs text-zinc-500">Nenhuma coluna: SELECT *.</p>}
       {items.map((item, index) => (
-        <div key={index} className="flex items-center gap-1.5">
+        <div key={index} className={`flex items-center gap-1.5 ${item.off ? "opacity-50" : ""}`}>
           {item.expr.kind === "raw" ? (
             <ExprInput
               label="Coluna"
@@ -78,6 +78,8 @@ export function SelectClause({ state, onChange }: Props) {
             count={items.length}
             onMove={(to) => setItems(move(items, index, to))}
             onRemove={() => setItems(removeAt(items, index))}
+            off={item.off}
+            onToggleOff={() => update(index, { off: !item.off })}
           />
         </div>
       ))}

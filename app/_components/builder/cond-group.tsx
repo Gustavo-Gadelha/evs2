@@ -33,7 +33,7 @@ function CondRow({ cond, onChange }: { cond: Cond; onChange: (cond: Cond) => voi
   const inputType = right.kind === "date" && !LIST_OPS.includes(cond.op) ? "date" : "text";
 
   return (
-    <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+    <div className={`flex min-w-0 flex-1 flex-wrap gap-1.5 ${cond.off ? "opacity-50" : ""}`}>
       <ExprInput
         label="Lado esquerdo"
         className="min-w-40 flex-1"
@@ -96,14 +96,17 @@ type Props = {
   onChange: (group: CondGroup) => void;
   depth?: number;
   onRemove?: () => void;
+  onToggleOff?: () => void;
 };
 
 // Grupo AND/OR com condições e subgrupos aninhados (até MAX_DEPTH níveis).
-export function CondGroupEditor({ group, onChange, depth = 0, onRemove }: Props) {
+export function CondGroupEditor({ group, onChange, depth = 0, onRemove, onToggleOff }: Props) {
   const setItems = (items: CondGroup["items"]) => onChange({ ...group, items });
 
   return (
-    <div className={`flex flex-col gap-2 ${depth > 0 ? "rounded border border-dashed border-zinc-700 p-2" : ""}`}>
+    <div
+      className={`flex flex-col gap-2 ${depth > 0 ? "rounded border border-dashed border-zinc-700 p-2" : ""} ${group.off ? "opacity-50" : ""}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex overflow-hidden rounded border border-zinc-700 text-xs">
           {(["AND", "OR"] as const).map((op) => (
@@ -129,8 +132,13 @@ export function CondGroupEditor({ group, onChange, depth = 0, onRemove }: Props)
             + grupo
           </button>
         )}
+        {onToggleOff && (
+          <button type="button" className={`btn-ghost ml-auto ${group.off ? "text-amber-300" : ""}`} onClick={onToggleOff}>
+            {group.off ? "incluir grupo" : "omitir grupo"}
+          </button>
+        )}
         {onRemove && (
-          <button type="button" className="btn-ghost ml-auto" onClick={onRemove}>
+          <button type="button" className={`btn-ghost ${onToggleOff ? "" : "ml-auto"}`} onClick={onRemove}>
             remover grupo
           </button>
         )}
@@ -145,6 +153,7 @@ export function CondGroupEditor({ group, onChange, depth = 0, onRemove }: Props)
                 depth={depth + 1}
                 onChange={(next) => setItems(replaceAt(group.items, index, next))}
                 onRemove={() => setItems(removeAt(group.items, index))}
+                onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
               />
             </div>
           ) : (
@@ -155,6 +164,8 @@ export function CondGroupEditor({ group, onChange, depth = 0, onRemove }: Props)
                 count={group.items.length}
                 onMove={(to) => setItems(move(group.items, index, to))}
                 onRemove={() => setItems(removeAt(group.items, index))}
+                off={item.off}
+                onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
               />
             </>
           )}

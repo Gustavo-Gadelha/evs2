@@ -1,12 +1,18 @@
 "use client";
 
-import type { Problem, QueryState, Section as SectionName } from "@/lib/sql/query-state";
+import { isCondGroup, type CondGroup, type Problem, type QueryState, type Section as SectionName } from "@/lib/sql/query-state";
 import { CondGroupEditor } from "./cond-group";
 import { FromClause, JoinsClause } from "./from-joins";
 import { GroupByClause, HavingClause } from "./group-having";
 import { LimitClause, OrderByClause } from "./order-limit";
 import { Section } from "./section";
 import { SelectClause } from "./select-list";
+
+const countOff = (items: { off?: boolean }[]) => items.filter((item) => item.off).length;
+
+function countGroupOff(group: CondGroup): number {
+  return group.items.reduce((sum, item) => sum + (item.off ? 1 : isCondGroup(item) ? countGroupOff(item) : 0), 0);
+}
 
 type Props = {
   state: QueryState;
@@ -23,22 +29,22 @@ export function Builder({ state, problems, onChange }: Props) {
       <Section title="FROM" problems={of("from")}>
         <FromClause state={state} onChange={patch} />
       </Section>
-      <Section title={`JOINS (${state.joins.length})`} problems={of("joins")}>
+      <Section title={`JOINS (${state.joins.length})`} problems={of("joins")} off={countOff(state.joins)}>
         <JoinsClause state={state} onChange={patch} />
       </Section>
-      <Section title="SELECT" problems={of("select")}>
+      <Section title="SELECT" problems={of("select")} off={countOff(state.select)}>
         <SelectClause state={state} onChange={patch} />
       </Section>
-      <Section title="WHERE" problems={of("where")}>
+      <Section title="WHERE" problems={of("where")} off={countGroupOff(state.where)}>
         <CondGroupEditor group={state.where} onChange={(where) => patch({ where })} />
       </Section>
       <Section title="GROUP BY" problems={of("groupBy")}>
         <GroupByClause state={state} onChange={patch} />
       </Section>
-      <Section title="HAVING" problems={of("having")}>
+      <Section title="HAVING" problems={of("having")} off={countGroupOff(state.having)}>
         <HavingClause state={state} onChange={patch} />
       </Section>
-      <Section title="ORDER BY" problems={of("orderBy")}>
+      <Section title="ORDER BY" problems={of("orderBy")} off={countOff(state.orderBy)}>
         <OrderByClause state={state} onChange={patch} />
       </Section>
       <Section title="LIMITE" problems={of("limit")}>

@@ -8,11 +8,19 @@ import { RowActions } from "./row-actions";
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
 // Tabelas e aliases Oracle sem aspas: sempre em maiúsculas.
-function IdentInput(props: { label: string; value: string; onChange: (value: string) => void; placeholder: string; className: string }) {
+function IdentInput(props: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  className: string;
+  list?: string;
+}) {
   return (
     <input
       aria-label={props.label}
       spellCheck={false}
+      list={props.list}
       className={`input font-mono uppercase ${props.className}`}
       placeholder={props.placeholder}
       value={props.value}
@@ -55,6 +63,7 @@ export function JoinsClause({ state, onChange }: Props) {
     <>
       {joins.map((join, index) => (
         <div key={index} className="flex flex-col gap-2 rounded border border-zinc-800 p-2">
+          <div className={`flex flex-col gap-2 ${join.off ? "opacity-50" : ""}`}>
           <div className="flex gap-1.5">
             <select
               aria-label="Tipo de join"
@@ -85,6 +94,8 @@ export function JoinsClause({ state, onChange }: Props) {
               count={joins.length}
               onMove={(to) => setJoins(move(joins, index, to))}
               onRemove={() => setJoins(removeAt(joins, index))}
+              off={join.off}
+              onToggleOff={() => update(index, { off: !join.off })}
             />
           </div>
           <div className="flex items-start gap-2 pl-2">
@@ -92,6 +103,7 @@ export function JoinsClause({ state, onChange }: Props) {
             <div className="min-w-0 flex-1">
               <CondGroupEditor group={join.on} onChange={(on) => update(index, { on })} />
             </div>
+          </div>
           </div>
         </div>
       ))}
