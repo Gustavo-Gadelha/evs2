@@ -13,7 +13,7 @@ Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya 
 
 ## Integração com o Sankhya
 
-Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`, `exceptions.py`, `parsers.py`), em `lib/sankhya/`.
+Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`, `exceptions.py`, `parsers.py`), em `src/features/sankhya/server/`.
 
 - **Login**: `POST {BASE_URL}/login` com os headers `appkey`, `token`, `username`, `password`; timeout 10s. Erro de auth quando: status não 2xx, corpo não JSON, `error` não nulo, ou `bearerToken` ausente/vazio.
 - **Sessão**: `Authorization: Bearer <token>` em toda requisição. Login sob demanda na primeira requisição; token em cache no `globalThis` (sobrevive ao HMR).
@@ -39,17 +39,17 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 
 ## Proteções
 
-1. Credenciais só em `.env.local` (`SANKHYA_BASE_URL`, `SANKHYA_APPKEY`, `SANKHYA_TOKEN`, `SANKHYA_USERNAME`, `SANKHYA_PASSWORD`), sem `NEXT_PUBLIC_`, validadas com zod na subida (`instrumentation.ts`).
+1. Credenciais só em `.env.local` (`SANKHYA_BASE_URL`, `SANKHYA_APPKEY`, `SANKHYA_TOKEN`, `SANKHYA_USERNAME`, `SANKHYA_PASSWORD`), sem `NEXT_PUBLIC_`, validadas com zod na subida (`src/instrumentation.ts`).
 2. (Removida.) As rotas não checam mais `NODE_ENV`: o build standalone sempre roda em produção. A proteção passa a depender das proteções 3 e 4.
 3. Rotas recusam `Host` que não seja `localhost`/`127.0.0.1` e `Origin` presente e não local (DNS rebinding e cross-site).
 4. Só Docker Compose: build standalone (`node server.js`) em `0.0.0.0:3100` dentro do container, publicado apenas em `127.0.0.1:3100`; as migrations rodam no serviço `migrate` antes do app. `dev`/`start` do `package.json` saem com erro; `build` roda `prisma generate && next build` e só serve ao Dockerfile.
 5. Senha, token, appkey e bearer token nunca aparecem em logs nem em respostas (headers e corpos passam por redação).
 6. O navegador não escolhe path, método nem headers: a única chamada ao gateway é a de `executeQuery`, montada no servidor.
-7. O banco SQLite (`/data/snk-assistant.db`) guarda dados reais do ERP: fica num volume Docker nomeado (`data`), fora do repositório e do bind mount; `lib/db/` começa com `import "server-only"` e as rotas `/api/history` e `/api/saved` passam pelas mesmas proteções 2 e 3 (`localOnly`).
+7. O banco SQLite (`/data/snk-assistant.db`) guarda dados reais do ERP: fica num volume Docker nomeado (`data`), fora do repositório e do bind mount; `src/lib/db/` e os `server/` das features começam com `import "server-only"` e as rotas `/api/history` e `/api/saved` passam pelas mesmas proteções 2 e 3 (`localOnly`).
 
 ## Trava de leitura
 
-`lib/sql/read-only.ts`, a mesma função no cliente (aviso antes de enviar) e no servidor (recusa com 400 e o motivo). Checagem léxica, sem parser:
+`src/lib/sql/read-only.ts`, a mesma função no cliente (aviso antes de enviar) e no servidor (recusa com 400 e o motivo). Checagem léxica, sem parser:
 
 1. Remove comentários (`--`, `/* */`) e literais (`'...'`, `q'[...]'` e demais delimitadores de `q'`, `"IDENT"`).
 2. No que sobra, exige:
@@ -61,7 +61,7 @@ Limitações aceitas: pode recusar um SELECT legítimo que use uma dessas palavr
 
 ## Modelo do builder
 
-`lib/sql/query-state.ts`. Serializável; é o que vai para histórico e consultas salvas.
+`src/lib/sql/query-state.ts`. Serializável; é o que vai para histórico e consultas salvas.
 
 ```ts
 type QueryState = {
@@ -89,11 +89,11 @@ type Cond = {
 ```
 
 - Tabela e alias: identificador Oracle `[A-Z_][A-Z0-9_$#]*`, convertidos para maiúsculas. Expressões: texto livre.
-- Menu ƒ (`lib/sql/functions.ts`) insere modelos no cursor: `NVL`, `COALESCE`, `DECODE`, `CASE WHEN`, `TRUNC`, `TO_CHAR(x,'DD/MM/YYYY')`, `TO_DATE`, `EXTRACT`, `SUBSTR`, `UPPER`, `SYSDATE`, `ADD_MONTHS`.
+- Menu ƒ (`src/lib/sql/functions.ts`) insere modelos no cursor: `NVL`, `COALESCE`, `DECODE`, `CASE WHEN`, `TRUNC`, `TO_CHAR(x,'DD/MM/YYYY')`, `TO_DATE`, `EXTRACT`, `SUBSTR`, `UPPER`, `SYSDATE`, `ADD_MONTHS`.
 
 ## Gerador Oracle
 
-`toOracleSql(state): { sql: string; problems: Problem[] }` em `lib/sql/to-oracle.ts`, função pura. `Problem = { section: "from" | "joins" | "select" | "where" | "groupBy" | "having" | "orderBy" | "limit"; message: string }`.
+`toOracleSql(state): { sql: string; problems: Problem[] }` em `src/lib/sql/to-oracle.ts`, função pura. `Problem = { section: "from" | "joins" | "select" | "where" | "groupBy" | "having" | "orderBy" | "limit"; message: string }`.
 
 - Uma cláusula por linha, com indentação; `CondGroup` aninhado vira parênteses.
 - Linhas em branco do builder (condição sem lado esquerdo, coluna vazia, join sem tabela) são ignoradas, sem gerar problema.
@@ -136,7 +136,7 @@ Três colunas em telas largas; empilhadas em telas estreitas.
     - Copiar;
     - Salvar consulta (nome inline).
 - **Resultado**: tabela (padrão) ou JSON bruto; número de linhas e duração; "Copiar CSV" com todas as linhas e colunas do resultado, sem aplicar filtros; erro de consulta (`statusMessage`) em destaque.
-  - Tabela com TanStack Table (`app/_components/result-table.tsx`) e linhas virtualizadas com TanStack Virtual (altura fixa de 28px), sem limite de linhas na tela.
+  - Tabela com TanStack Table (`src/features/results/result-table.tsx`) e linhas virtualizadas com TanStack Virtual (altura fixa de 28px), sem limite de linhas na tela.
   - Ordenação por clique no cabeçalho (ASC → DESC → nenhuma): número como número, texto em ordem natural pt-BR, nulos por último no ASC.
   - Busca global e filtro por coluna: "contém", sem diferenciar maiúsculas nem acentos.
   - Menu "Colunas" para mostrar/ocultar; coluna `#` com a posição da linha na ordem exibida.
@@ -150,20 +150,19 @@ Três colunas em telas largas; empilhadas em telas estreitas.
 ## Estrutura
 
 ```
-lib/sql/query-state.ts      tipos + estado vazio
-lib/sql/to-oracle.ts        gerador
-lib/sql/read-only.ts        trava de leitura
-lib/sql/functions.ts        modelos do menu ƒ
-lib/sankhya/                auth, client, errors, redact, state, route, dictionary (TDDTAB/TDDCAM)
-lib/dictionary.ts           cliente do dicionário, com cache de promessas; lib/dictionary-search.ts índice e busca ranqueada (até 50)
-lib/db/                     client Prisma (`client.ts`) e acesso a histórico/salvas (`store.ts`); `generated/` é gerado e ignorado pelo git
-lib/history.ts, lib/api.ts  tipos, limites e cliente HTTP do histórico e das salvas
+src/app/                    só roteamento: layout, page, globals.css e api/**/route.ts (cada um só reexporta o handler da feature)
+src/lib/sql/                query-state (tipos + estado vazio), to-oracle (gerador), read-only (trava de leitura), functions (menu ƒ)
+src/lib/                    api (cliente HTTP), types, env (zod, usado por instrumentation.ts); db/ = client Prisma, `generated/` gerado e ignorado pelo git
+src/components/             combobox (Downshift), UI genérica
+src/features/sankhya/       components/auth-header; server/: auth, client, errors, redact, state, local-only e handlers login/logout/status
+src/features/query/         components/sql-editor; server/: execute (executeQuery) e handler query
+src/features/dictionary/    components/dictionary-browser e dictionary-provider (autocomplete); client (cache de promessas), search (índice, até 50); server/: dictionary (TDDTAB/TDDCAM) e handlers tables/columns
+src/features/history/       components/sidebar e save-form; history (tipos, limites, cliente HTTP); server/: store (Prisma) e handlers history/saved
+src/features/builder/       builder, from-joins, select-list, cond-group, group-having, order-limit, expr-input, editable-list, sortable-list, list, row-actions, section
+src/features/results/       result-table, result-view
+src/features/explorer/      explorer (orquestra a tela; page.tsx importa daqui)
+src/instrumentation.ts      valida o ambiente na subida
 prisma/                     `schema.prisma` e migrações (aplicadas por `prisma migrate deploy` na subida do container)
-app/api/sankhya/query/      rota de consulta
-app/api/sankhya/dictionary/ rotas tables e columns
-app/api/history, app/api/saved/  rotas do SQLite
-app/_components/builder/    from-joins, select-list, cond-group, group-having, order-limit, dictionary (contexto do autocomplete), combobox, editable-list
-app/_components/            explorer, auth-header, sql-editor, result-view, sidebar, save-form
 ```
 
 ## Verificação
