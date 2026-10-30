@@ -3,6 +3,7 @@
 import { useRef } from "react";
 
 import { ORACLE_FUNCTIONS, applyTemplate } from "@/lib/sql/functions";
+import { COLUMNS_LIST } from "./dictionary";
 
 type Props = {
   label: string;
@@ -35,6 +36,7 @@ export function ExprInput({ label, value, onChange, placeholder, className = "" 
         ref={ref}
         aria-label={label}
         spellCheck={false}
+        list={COLUMNS_LIST}
         className="input min-w-0 flex-1 rounded-r-none font-mono"
         placeholder={placeholder}
         value={value}

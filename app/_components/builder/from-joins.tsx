@@ -2,6 +2,7 @@
 
 import { JOIN_TYPES, type Join, type JoinType, type QueryState } from "@/lib/sql/query-state";
 import { CondGroupEditor } from "./cond-group";
+import { TABLES_LIST } from "./dictionary";
 import { move, removeAt, replaceAt } from "./list";
 import { RowActions } from "./row-actions";
 
@@ -34,6 +35,7 @@ export function FromClause({ state, onChange }: Props) {
     <div className="flex gap-1.5">
       <IdentInput
         label="Tabela"
+        list={TABLES_LIST}
         className="min-w-0 flex-1"
         placeholder="TGFCAB"
         value={state.from.table}
@@ -77,6 +79,7 @@ export function JoinsClause({ state, onChange }: Props) {
             </select>
             <IdentInput
               label="Tabela do join"
+              list={TABLES_LIST}
               className="min-w-0 flex-1"
               placeholder="TGFPAR"
               value={join.table}

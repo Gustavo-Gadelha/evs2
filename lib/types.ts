@@ -15,3 +15,5 @@ export type AuthStatus = {
   authenticatedAt: string | null;
   baseUrl: string;
 };
+
+export type DictionaryEntry = { name: string; description: string };

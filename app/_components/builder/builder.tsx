@@ -2,6 +2,7 @@
 
 import { isCondGroup, type CondGroup, type Problem, type QueryState, type Section as SectionName } from "@/lib/sql/query-state";
 import { CondGroupEditor } from "./cond-group";
+import { Dictionary } from "./dictionary";
 import { FromClause, JoinsClause } from "./from-joins";
 import { GroupByClause, HavingClause } from "./group-having";
 import { LimitClause, OrderByClause } from "./order-limit";
@@ -25,6 +26,7 @@ export function Builder({ state, problems, onChange }: Props) {
   const of = (section: SectionName) => problems.filter((problem) => problem.section === section);
 
   return (
+    <Dictionary state={state}>
     <div className="flex flex-col gap-2">
       <Section title="FROM" problems={of("from")}>
         <FromClause state={state} onChange={patch} />
@@ -51,5 +53,6 @@ export function Builder({ state, problems, onChange }: Props) {
         <LimitClause state={state} onChange={patch} />
       </Section>
     </div>
+    </Dictionary>
   );
 }
