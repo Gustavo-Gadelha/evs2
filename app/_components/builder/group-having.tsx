@@ -1,17 +1,27 @@
 "use client";
 
+import { useRef } from "react";
+
 import type { QueryState } from "@/lib/sql/query-state";
 import { groupByExprs } from "@/lib/sql/to-oracle";
 import { CondGroupEditor } from "./cond-group";
 import { ExprInput } from "./expr-input";
 import { move, removeAt, replaceAt } from "./list";
 import { RowActions } from "./row-actions";
+import { SortableList } from "./sortable-list";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
 export function GroupByClause({ state, onChange }: Props) {
   const { mode, exprs } = state.groupBy;
   const setGroupBy = (patch: Partial<QueryState["groupBy"]>) => onChange({ groupBy: { ...state.groupBy, ...patch } });
+  // Expressões são texto, sem identidade própria: os ids ficam num vetor paralelo, mantido junto com cada edição.
+  const ids = useRef<string[]>([]);
+  if (ids.current.length !== exprs.length) ids.current = exprs.map(() => crypto.randomUUID());
+  const setExprs = (next: string[], nextIds: string[] = ids.current) => {
+    ids.current = nextIds;
+    setGroupBy({ exprs: next });
+  };
   const auto = groupByExprs({ ...state, groupBy: { mode: "auto", exprs: [] } });
 
   return (
@@ -36,23 +46,34 @@ export function GroupByClause({ state, onChange }: Props) {
         </p>
       ) : (
         <>
-          {exprs.map((expr, index) => (
-            <div key={index} className="flex items-center gap-1.5">
-              <ExprInput
-                label="Expressão do GROUP BY"
-                className="min-w-0 flex-1"
-                value={expr}
-                onChange={(value) => setGroupBy({ exprs: replaceAt(exprs, index, value) })}
-              />
-              <RowActions
-                index={index}
-                count={exprs.length}
-                onMove={(to) => setGroupBy({ exprs: move(exprs, index, to) })}
-                onRemove={() => setGroupBy({ exprs: removeAt(exprs, index) })}
-              />
-            </div>
-          ))}
-          <button type="button" className="btn-ghost self-start" onClick={() => setGroupBy({ exprs: [...exprs, ""] })}>
+          <SortableList
+            items={exprs}
+            getId={(_, index) => ids.current[index]}
+            onMove={(from, to) => setExprs(move(exprs, from, to), move(ids.current, from, to))}
+          >
+            {(expr, index, grip) => (
+              <div className="flex items-center gap-1.5">
+                {grip}
+                <ExprInput
+                  label="Expressão do GROUP BY"
+                  className="min-w-0 flex-1"
+                  value={expr}
+                  onChange={(value) => setExprs(replaceAt(exprs, index, value))}
+                />
+                <RowActions
+                  index={index}
+                  count={exprs.length}
+                  onMove={(to) => setExprs(move(exprs, index, to), move(ids.current, index, to))}
+                  onRemove={() => setExprs(removeAt(exprs, index), removeAt(ids.current, index))}
+                />
+              </div>
+            )}
+          </SortableList>
+          <button
+            type="button"
+            className="btn-ghost self-start"
+            onClick={() => setExprs([...exprs, ""], [...ids.current, crypto.randomUUID()])}
+          >
             + expressão
           </button>
         </>

@@ -3,6 +3,7 @@
 import { AGG_FNS, type AggExpr, type AggFn, type Expr, type QueryState, type SelectItem } from "@/lib/sql/query-state";
 import { ExprInput } from "./expr-input";
 import { move, removeAt, replaceAt } from "./list";
+import { SortableList } from "./sortable-list";
 import { RowActions } from "./row-actions";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
@@ -52,37 +53,40 @@ export function SelectClause({ state, onChange }: Props) {
         DISTINCT
       </label>
       {items.length === 0 && <p className="text-xs text-zinc-500">Nenhuma coluna: SELECT *.</p>}
-      {items.map((item, index) => (
-        <div key={index} className={`flex items-center gap-1.5 ${item.off ? "opacity-50" : ""}`}>
-          {item.expr.kind === "raw" ? (
-            <ExprInput
-              label="Coluna"
-              className="min-w-0 flex-1"
-              placeholder="CAB.NUNOTA"
-              value={item.expr.sql}
-              onChange={(sql) => update(index, { expr: { kind: "raw", sql } })}
+      <SortableList items={items} onMove={(from, to) => setItems(move(items, from, to))}>
+        {(item, index, grip) => (
+          <div className={`flex items-center gap-1.5 ${item.off ? "opacity-50" : ""}`}>
+            {grip}
+            {item.expr.kind === "raw" ? (
+              <ExprInput
+                label="Coluna"
+                className="min-w-0 flex-1"
+                placeholder="CAB.NUNOTA"
+                value={item.expr.sql}
+                onChange={(sql) => update(index, { expr: { kind: "raw", sql } })}
+              />
+            ) : (
+              <AggEditor expr={item.expr} onChange={(expr) => update(index, { expr })} />
+            )}
+            <input
+              aria-label="Alias da coluna"
+              spellCheck={false}
+              className="input w-28 font-mono"
+              placeholder="alias"
+              value={item.alias ?? ""}
+              onChange={(event) => update(index, { alias: event.target.value })}
             />
-          ) : (
-            <AggEditor expr={item.expr} onChange={(expr) => update(index, { expr })} />
-          )}
-          <input
-            aria-label="Alias da coluna"
-            spellCheck={false}
-            className="input w-28 font-mono"
-            placeholder="alias"
-            value={item.alias ?? ""}
-            onChange={(event) => update(index, { alias: event.target.value })}
-          />
-          <RowActions
-            index={index}
-            count={items.length}
-            onMove={(to) => setItems(move(items, index, to))}
-            onRemove={() => setItems(removeAt(items, index))}
-            off={item.off}
-            onToggleOff={() => update(index, { off: !item.off })}
-          />
-        </div>
-      ))}
+            <RowActions
+              index={index}
+              count={items.length}
+              onMove={(to) => setItems(move(items, index, to))}
+              onRemove={() => setItems(removeAt(items, index))}
+              off={item.off}
+              onToggleOff={() => update(index, { off: !item.off })}
+            />
+          </div>
+        )}
+      </SortableList>
       <div className="flex gap-2">
         <button type="button" className="btn-ghost" onClick={() => setItems([...items, { expr: { kind: "raw", sql: "" } }])}>
           + coluna

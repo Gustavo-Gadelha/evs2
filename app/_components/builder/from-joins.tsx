@@ -4,6 +4,7 @@ import { JOIN_TYPES, type Join, type JoinType, type QueryState } from "@/lib/sql
 import { CondGroupEditor } from "./cond-group";
 import { TABLES_LIST } from "./dictionary";
 import { move, removeAt, replaceAt } from "./list";
+import { SortableList } from "./sortable-list";
 import { RowActions } from "./row-actions";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
@@ -63,53 +64,54 @@ export function JoinsClause({ state, onChange }: Props) {
 
   return (
     <>
-      {joins.map((join, index) => (
-        <div key={index} className="flex flex-col gap-2 rounded border border-zinc-800 p-2">
-          <div className={`flex flex-col gap-2 ${join.off ? "opacity-50" : ""}`}>
-          <div className="flex gap-1.5">
-            <select
-              aria-label="Tipo de join"
-              className="input"
-              value={join.type}
-              onChange={(event) => update(index, { type: event.target.value as JoinType })}
-            >
-              {JOIN_TYPES.map((type) => (
-                <option key={type}>{type}</option>
-              ))}
-            </select>
-            <IdentInput
-              label="Tabela do join"
-              list={TABLES_LIST}
-              className="min-w-0 flex-1"
-              placeholder="TGFPAR"
-              value={join.table}
-              onChange={(table) => update(index, { table })}
-            />
-            <IdentInput
-              label="Alias do join"
-              className="w-24"
-              placeholder="PAR"
-              value={join.alias}
-              onChange={(alias) => update(index, { alias })}
-            />
-            <RowActions
-              index={index}
-              count={joins.length}
-              onMove={(to) => setJoins(move(joins, index, to))}
-              onRemove={() => setJoins(removeAt(joins, index))}
-              off={join.off}
-              onToggleOff={() => update(index, { off: !join.off })}
-            />
-          </div>
-          <div className="flex items-start gap-2 pl-2">
-            <span className="pt-1 font-mono text-xs text-zinc-500">ON</span>
-            <div className="min-w-0 flex-1">
-              <CondGroupEditor group={join.on} onChange={(on) => update(index, { on })} />
+      <SortableList items={joins} onMove={(from, to) => setJoins(move(joins, from, to))}>
+        {(join, index, grip) => (
+          <div className={`flex flex-col gap-2 rounded border border-zinc-800 p-2 ${join.off ? "opacity-50" : ""}`}>
+            <div className="flex items-center gap-1.5">
+              {grip}
+              <select
+                aria-label="Tipo de join"
+                className="input"
+                value={join.type}
+                onChange={(event) => update(index, { type: event.target.value as JoinType })}
+              >
+                {JOIN_TYPES.map((type) => (
+                  <option key={type}>{type}</option>
+                ))}
+              </select>
+              <IdentInput
+                label="Tabela do join"
+                list={TABLES_LIST}
+                className="min-w-0 flex-1"
+                placeholder="TGFPAR"
+                value={join.table}
+                onChange={(table) => update(index, { table })}
+              />
+              <IdentInput
+                label="Alias do join"
+                className="w-24"
+                placeholder="PAR"
+                value={join.alias}
+                onChange={(alias) => update(index, { alias })}
+              />
+              <RowActions
+                index={index}
+                count={joins.length}
+                onMove={(to) => setJoins(move(joins, index, to))}
+                onRemove={() => setJoins(removeAt(joins, index))}
+                off={join.off}
+                onToggleOff={() => update(index, { off: !join.off })}
+              />
+            </div>
+            <div className="flex items-start gap-2 pl-2">
+              <span className="pt-1 font-mono text-xs text-zinc-500">ON</span>
+              <div className="min-w-0 flex-1">
+                <CondGroupEditor group={join.on} onChange={(on) => update(index, { on })} />
+              </div>
             </div>
           </div>
-          </div>
-        </div>
-      ))}
+        )}
+      </SortableList>
       <button type="button" className="btn-ghost self-start" onClick={() => setJoins([...joins, newJoin()])}>
         + join
       </button>

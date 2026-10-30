@@ -13,6 +13,7 @@ import {
 } from "@/lib/sql/query-state";
 import { ExprInput } from "./expr-input";
 import { move, removeAt, replaceAt } from "./list";
+import { SortableList } from "./sortable-list";
 import { RowActions } from "./row-actions";
 
 const MAX_DEPTH = 3;
@@ -144,33 +145,36 @@ export function CondGroupEditor({ group, onChange, depth = 0, onRemove, onToggle
         )}
       </div>
 
-      {group.items.map((item, index) => (
-        <div key={index} className="flex items-start gap-1">
-          {isCondGroup(item) ? (
-            <div className="min-w-0 flex-1">
-              <CondGroupEditor
-                group={item}
-                depth={depth + 1}
-                onChange={(next) => setItems(replaceAt(group.items, index, next))}
-                onRemove={() => setItems(removeAt(group.items, index))}
-                onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
-              />
-            </div>
-          ) : (
-            <>
-              <CondRow cond={item} onChange={(next) => setItems(replaceAt(group.items, index, next))} />
-              <RowActions
-                index={index}
-                count={group.items.length}
-                onMove={(to) => setItems(move(group.items, index, to))}
-                onRemove={() => setItems(removeAt(group.items, index))}
-                off={item.off}
-                onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
-              />
-            </>
-          )}
-        </div>
-      ))}
+      <SortableList items={group.items} onMove={(from, to) => setItems(move(group.items, from, to))}>
+        {(item, index, grip) => (
+          <div className="flex items-start gap-1">
+            <span className="mt-1.5 flex">{grip}</span>
+            {isCondGroup(item) ? (
+              <div className="min-w-0 flex-1">
+                <CondGroupEditor
+                  group={item}
+                  depth={depth + 1}
+                  onChange={(next) => setItems(replaceAt(group.items, index, next))}
+                  onRemove={() => setItems(removeAt(group.items, index))}
+                  onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
+                />
+              </div>
+            ) : (
+              <>
+                <CondRow cond={item} onChange={(next) => setItems(replaceAt(group.items, index, next))} />
+                <RowActions
+                  index={index}
+                  count={group.items.length}
+                  onMove={(to) => setItems(move(group.items, index, to))}
+                  onRemove={() => setItems(removeAt(group.items, index))}
+                  off={item.off}
+                  onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
+                />
+              </>
+            )}
+          </div>
+        )}
+      </SortableList>
     </div>
   );
 }
