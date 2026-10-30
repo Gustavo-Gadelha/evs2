@@ -107,7 +107,6 @@ export function Explorer() {
   }
 
   function newQuery() {
-    if (sql.trim() && !window.confirm("Limpar a consulta atual e começar uma nova?")) return;
     load({ state: emptyQueryState(), sql: "", manual: false });
   }
 
