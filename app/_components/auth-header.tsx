@@ -1,13 +1,18 @@
+import type { OmittableSection } from "@/lib/sql/query-state";
 import type { AuthStatus } from "@/lib/types";
+import { OmitMenu } from "./omit-menu";
 
 type Props = {
   status: AuthStatus | null;
   busy: boolean;
+  omit: OmittableSection[];
+  onNewQuery: () => void;
   onLogin: () => void;
   onLogout: () => void;
+  onOmitChange: (omit: OmittableSection[]) => void;
 };
 
-export function AuthHeader({ status, busy, onLogin, onLogout }: Props) {
+export function AuthHeader({ status, busy, omit, onNewQuery, onLogin, onLogout, onOmitChange }: Props) {
   const authenticated = status?.authenticated ?? false;
 
   return (
@@ -17,6 +22,10 @@ export function AuthHeader({ status, busy, onLogin, onLogout }: Props) {
         local · dev-only
       </span>
       <code className="min-w-0 truncate text-xs text-zinc-400">{status?.baseUrl ?? "…"}</code>
+
+      <button type="button" className="btn" onClick={onNewQuery}>
+        Nova consulta
+      </button>
 
       <div className="ml-auto flex items-center gap-3">
         <span className="flex items-center gap-2 text-xs text-zinc-300">
@@ -34,6 +43,7 @@ export function AuthHeader({ status, busy, onLogin, onLogout }: Props) {
         <button type="button" className="btn" disabled={busy || !authenticated} onClick={onLogout}>
           Logout
         </button>
+        <OmitMenu omit={omit} onChange={onOmitChange} />
       </div>
     </header>
   );

@@ -1,14 +1,11 @@
 "use client";
 
 import { MAX_HISTORY, type HistoryItem, type SavedQuery } from "@/lib/history";
-import type { Preset } from "@/presets";
 import { SaveForm } from "./save-form";
 
 type Props = {
-  presets: Preset[];
   history: HistoryItem[];
   saved: SavedQuery[];
-  onLoadPreset: (preset: Preset) => void;
   onLoadHistory: (entry: HistoryItem) => void;
   onLoadSaved: (query: SavedQuery) => void;
   onSaveHistory: (name: string, entry: HistoryItem) => void;
@@ -34,8 +31,7 @@ function ItemButton({ label, title, onClick }: { label: string; title?: string; 
 }
 
 export function Sidebar(props: Props) {
-  const { presets, history, saved, onLoadPreset, onLoadHistory, onLoadSaved, onSaveHistory, onRemoveSaved, onClearHistory } =
-    props;
+  const { history, saved, onLoadHistory, onLoadSaved, onSaveHistory, onRemoveSaved, onClearHistory } = props;
 
   return (
     <aside className="flex flex-col gap-6 border-zinc-800 p-4 lg:row-span-2 lg:border-r xl:row-span-1">
@@ -54,17 +50,6 @@ export function Sidebar(props: Props) {
               >
                 ✕
               </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="label">Modelos</h2>
-        <ul className="flex flex-col gap-1">
-          {presets.map((preset) => (
-            <li key={preset.id} className="flex">
-              <ItemButton label={preset.label} onClick={() => onLoadPreset(preset)} />
             </li>
           ))}
         </ul>

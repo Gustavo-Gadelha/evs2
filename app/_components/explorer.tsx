@@ -8,7 +8,6 @@ import { emptyQueryState, type QueryState } from "@/lib/sql/query-state";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { toOracleSql } from "@/lib/sql/to-oracle";
 import type { AuthStatus, QueryResult } from "@/lib/types";
-import { presets, type Preset } from "@/presets";
 import { AuthHeader } from "./auth-header";
 import { Builder } from "./builder/builder";
 import { ResultView } from "./result-view";
@@ -112,11 +111,6 @@ export function Explorer() {
     load({ state: emptyQueryState(), sql: "", manual: false });
   }
 
-  function loadPreset(preset: Preset) {
-    const state = structuredClone(preset.state);
-    load({ state, sql: toOracleSql(state).sql, manual: false });
-  }
-
   const run = useCallback(async () => {
     const check = checkReadOnly(sql);
     if (!check.ok) {
@@ -177,8 +171,11 @@ export function Explorer() {
       <AuthHeader
         status={status}
         busy={authBusy}
+        omit={queryState.omit ?? []}
+        onNewQuery={newQuery}
         onLogin={() => authAction("/api/sankhya/login")}
         onLogout={() => authAction("/api/sankhya/logout")}
+        onOmitChange={(omit) => changeState({ ...queryState, omit })}
       />
       {authError && (
         <div className="border-b border-red-900 bg-red-950/60 px-4 py-2 text-sm text-red-200">{authError}</div>
@@ -190,10 +187,8 @@ export function Explorer() {
       )}
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
         <Sidebar
-          presets={presets}
           history={historyItems}
           saved={saved}
-          onLoadPreset={loadPreset}
           onLoadHistory={(item) => void loadHistory(item)}
           onLoadSaved={(query) => load(query)}
           onSaveHistory={(name, item) => void persist(savedQueries.save(name, item), setSaved)}
@@ -201,9 +196,6 @@ export function Explorer() {
           onClearHistory={() => void persist(history.clear(), setHistoryItems)}
         />
         <main className="flex min-w-0 flex-col gap-3 p-4">
-          <button type="button" className="btn self-start" onClick={newQuery}>
-            Nova consulta
-          </button>
           <Builder state={queryState} problems={generated.problems} onChange={changeState} />
         </main>
         <div className="flex min-w-0 flex-col gap-4 p-4 lg:col-start-2 xl:col-start-auto">
