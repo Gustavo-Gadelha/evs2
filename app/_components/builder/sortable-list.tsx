@@ -20,12 +20,14 @@ type RowProps<T> = {
   id: string;
   item: T;
   index: number;
+  // Com `group`, a linha pode ser solta em outras listas do mesmo provider que usem o mesmo `group`/tipo.
+  group?: string;
   children: Props<T>["children"];
 };
 
-function SortableRow<T>({ id, item, index, children }: RowProps<T>) {
+export function SortableRow<T>({ id, item, index, group, children }: RowProps<T>) {
   const handle = useRef<HTMLButtonElement>(null);
-  const { ref, isDragging } = useSortable({ id, index, handle });
+  const { ref, isDragging } = useSortable({ id, index, handle, group, type: "item", accept: "item" });
 
   const grip = (
     <button

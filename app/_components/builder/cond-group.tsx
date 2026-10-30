@@ -1,5 +1,9 @@
 "use client";
 
+import { DragDropProvider, useDroppable } from "@dnd-kit/react";
+import { isSortable } from "@dnd-kit/react/sortable";
+import { useId, type ReactNode } from "react";
+
 import {
   COND_OPS,
   VALUE_KINDS,
@@ -12,14 +16,82 @@ import {
   type ValueKind,
 } from "@/lib/sql/query-state";
 import { ExprInput } from "./expr-input";
-import { move, removeAt, replaceAt } from "./list";
-import { SortableList } from "./sortable-list";
+import { idOf, inherit, move, removeAt, replaceAt } from "./list";
+import { SortableRow } from "./sortable-list";
 import { RowActions } from "./row-actions";
 
 const MAX_DEPTH = 3;
 const KIND_LABELS: Record<ValueKind, string> = { text: "texto", number: "número", date: "data", expr: "expressão" };
 const LIST_OPS: CondOp[] = ["IN", "NOT IN"];
 const NO_VALUE_OPS: CondOp[] = ["IS NULL", "IS NOT NULL"];
+const DROP_PREFIX = "drop:";
+
+type Item = CondGroup["items"][number];
+
+// Id do grupo: o do próprio objeto, exceto na raiz, cujo objeto é recriado a cada edição.
+const groupId = (group: CondGroup, rootId: string, root: CondGroup) => (group === root ? rootId : idOf(group));
+
+function findGroup(group: CondGroup, id: string, rootId: string, root: CondGroup = group): CondGroup | null {
+  if (groupId(group, rootId, root) === id) return group;
+  for (const item of group.items) {
+    if (isCondGroup(item)) {
+      const found = findGroup(item, id, rootId, root);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// Níveis de grupos abaixo de `group` (0 = sem subgrupos).
+const height = (group: CondGroup): number =>
+  group.items.reduce((max, item) => (isCondGroup(item) ? Math.max(max, 1 + height(item)) : max), 0);
+
+function depthOf(group: CondGroup, id: string, rootId: string, root: CondGroup = group, depth = 0): number {
+  if (groupId(group, rootId, root) === id) return depth;
+  for (const item of group.items) {
+    if (isCondGroup(item)) {
+      const found = depthOf(item, id, rootId, root, depth + 1);
+      if (found >= 0) return found;
+    }
+  }
+  return -1;
+}
+
+// Refaz a árvore trocando os itens do grupo `id`, preservando os ids dos grupos recriados.
+function editItems(root: CondGroup, rootId: string, id: string, edit: (items: Item[]) => Item[]): CondGroup {
+  const walk = (group: CondGroup): CondGroup => {
+    const items = groupId(group, rootId, root) === id ? edit(group.items) : group.items;
+    const next = { ...group, items: items.map((item) => (isCondGroup(item) ? walk(item) : item)) };
+    return group === root ? next : inherit(group, next);
+  };
+  return walk(root);
+}
+
+// Move um item entre grupos (ou dentro do mesmo). Recusa soltar um grupo dentro de si mesmo e passar de MAX_DEPTH.
+function moveItem(root: CondGroup, rootId: string, from: [string, number], to: [string, number]): CondGroup {
+  const item = findGroup(root, from[0], rootId)?.items[from[1]];
+  if (!item) return root;
+  if (isCondGroup(item)) {
+    if (findGroup(item, to[0], rootId, item)) return root;
+    if (depthOf(root, to[0], rootId) + 1 + height(item) > MAX_DEPTH) return root;
+  }
+  const removed = editItems(root, rootId, from[0], (items) => items.filter((_, i) => i !== from[1]));
+  return editItems(removed, rootId, to[0], (items) => {
+    const next = [...items];
+    next.splice(to[1], 0, item);
+    return next;
+  });
+}
+
+// Área de soltura do grupo, para receber itens quando ele está vazio (baixa prioridade: as linhas vencem).
+function GroupDrop({ id, children }: { id: string; children: ReactNode }) {
+  const { ref } = useDroppable({ id: DROP_PREFIX + id, type: "group", accept: "item", collisionPriority: 1 });
+  return (
+    <div ref={ref} className="flex min-h-6 flex-col gap-2">
+      {children}
+    </div>
+  );
+}
 
 function valuePlaceholder(cond: Cond): string {
   if (LIST_OPS.includes(cond.op)) return cond.right.kind === "date" ? "2026-01-01, 2026-02-01" : "a, b, c";
@@ -100,9 +172,32 @@ type Props = {
   onToggleOff?: () => void;
 };
 
-// Grupo AND/OR com condições e subgrupos aninhados (até MAX_DEPTH níveis).
-export function CondGroupEditor({ group, onChange, depth = 0, onRemove, onToggleOff }: Props) {
+// Grupo AND/OR com condições e subgrupos aninhados (até MAX_DEPTH níveis). A raiz cria o provider de arraste:
+// condições e subgrupos podem ser levados para dentro e para fora de qualquer grupo dela.
+export function CondGroupEditor(props: Props) {
+  const rootId = useId();
+  return (
+    <DragDropProvider
+      onDragEnd={(event) => {
+        if (event.canceled) return;
+        const { source } = event.operation;
+        if (!isSortable(source) || source.initialGroup == null || source.group == null) return;
+        const from = String(source.initialGroup).replace(DROP_PREFIX, "");
+        const to = String(source.group).replace(DROP_PREFIX, "");
+        if (from === to && source.initialIndex === source.index) return;
+        props.onChange(moveItem(props.group, rootId, [from, source.initialIndex], [to, source.index]));
+      }}
+    >
+      <GroupBody {...props} rootId={rootId} root={props.group} />
+    </DragDropProvider>
+  );
+}
+
+type BodyProps = Props & { rootId: string; root: CondGroup };
+
+function GroupBody({ group, onChange, depth = 0, onRemove, onToggleOff, rootId, root }: BodyProps) {
   const setItems = (items: CondGroup["items"]) => onChange({ ...group, items });
+  const id = groupId(group, rootId, root);
 
   return (
     <div
@@ -145,36 +240,45 @@ export function CondGroupEditor({ group, onChange, depth = 0, onRemove, onToggle
         )}
       </div>
 
-      <SortableList items={group.items} onMove={(from, to) => setItems(move(group.items, from, to))}>
-        {(item, index, grip) => (
-          <div className="flex items-start gap-1">
-            <span className="mt-1.5 flex">{grip}</span>
-            {isCondGroup(item) ? (
-              <div className="min-w-0 flex-1">
-                <CondGroupEditor
-                  group={item}
-                  depth={depth + 1}
-                  onChange={(next) => setItems(replaceAt(group.items, index, next))}
-                  onRemove={() => setItems(removeAt(group.items, index))}
-                  onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
-                />
-              </div>
-            ) : (
-              <>
-                <CondRow cond={item} onChange={(next) => setItems(replaceAt(group.items, index, next))} />
-                <RowActions
-                  index={index}
-                  count={group.items.length}
-                  onMove={(to) => setItems(move(group.items, index, to))}
-                  onRemove={() => setItems(removeAt(group.items, index))}
-                  off={item.off}
-                  onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
-                />
-              </>
-            )}
-          </div>
-        )}
-      </SortableList>
+      <GroupDrop id={id}>
+        {group.items.map((item, index) => {
+          const itemId = idOf(item);
+          return (
+            <SortableRow key={itemId} id={itemId} item={item} index={index} group={id}>
+              {(item, index, grip) => (
+                <div className="flex items-start gap-1">
+                  <span className="mt-1.5 flex">{grip}</span>
+                  {isCondGroup(item) ? (
+                    <div className="min-w-0 flex-1">
+                      <GroupBody
+                        group={item}
+                        depth={depth + 1}
+                        rootId={rootId}
+                        root={root}
+                        onChange={(next) => setItems(replaceAt(group.items, index, next))}
+                        onRemove={() => setItems(removeAt(group.items, index))}
+                        onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <CondRow cond={item} onChange={(next) => setItems(replaceAt(group.items, index, next))} />
+                      <RowActions
+                        index={index}
+                        count={group.items.length}
+                        onMove={(to) => setItems(move(group.items, index, to))}
+                        onRemove={() => setItems(removeAt(group.items, index))}
+                        off={item.off}
+                        onToggleOff={() => setItems(replaceAt(group.items, index, { ...item, off: !item.off }))}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+            </SortableRow>
+          );
+        })}
+      </GroupDrop>
     </div>
   );
 }

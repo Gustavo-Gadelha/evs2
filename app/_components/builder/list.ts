@@ -13,6 +13,12 @@ export function idOf(item: object): string {
   return id;
 }
 
+// Repassa o id de `from` para `to`, quando um objeto é recriado no lugar de outro.
+export function inherit<T extends object>(from: T, to: T): T {
+  if (from !== to) ids.set(to, idOf(from));
+  return to;
+}
+
 export function replaceAt<T>(items: T[], index: number, item: T): T[] {
   const current = items[index];
   if (typeof current === "object" && typeof item === "object" && current && item && current !== item) {
