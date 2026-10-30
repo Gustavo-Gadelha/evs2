@@ -2,65 +2,48 @@
 
 import { DEFAULT_LIMIT, type Limit, type OrderItem, type QueryState } from "@/lib/sql/query-state";
 import { ExprInput } from "./expr-input";
-import { move, removeAt, replaceAt } from "./list";
-import { SortableList } from "./sortable-list";
-import { RowActions } from "./row-actions";
+import { EditableList } from "./editable-list";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
 export function OrderByClause({ state, onChange }: Props) {
-  const items = state.orderBy;
-  const setItems = (orderBy: OrderItem[]) => onChange({ orderBy });
-  const update = (index: number, patch: Partial<OrderItem>) =>
-    setItems(replaceAt(items, index, { ...items[index], ...patch }));
-
   return (
-    <>
-      <SortableList items={items} onMove={(from, to) => setItems(move(items, from, to))}>
-        {(item, index, grip) => (
-          <div className={`flex items-center gap-1.5 ${item.off ? "opacity-50" : ""}`}>
-            {grip}
-            <ExprInput
-              label="Expressão do ORDER BY"
-              className="min-w-0 flex-1"
-              placeholder="CAB.DTNEG"
-              value={item.expr}
-              onChange={(expr) => update(index, { expr })}
-            />
-            <select
-              aria-label="Direção"
-              className="input"
-              value={item.dir}
-              onChange={(event) => update(index, { dir: event.target.value as OrderItem["dir"] })}
-            >
-              <option>ASC</option>
-              <option>DESC</option>
-            </select>
-            <select
-              aria-label="Posição dos nulos"
-              className="input"
-              value={item.nulls ?? ""}
-              onChange={(event) => update(index, { nulls: (event.target.value || undefined) as OrderItem["nulls"] })}
-            >
-              <option value="">nulos: padrão</option>
-              <option value="FIRST">NULLS FIRST</option>
-              <option value="LAST">NULLS LAST</option>
-            </select>
-            <RowActions
-              index={index}
-              count={items.length}
-              onMove={(to) => setItems(move(items, index, to))}
-              onRemove={() => setItems(removeAt(items, index))}
-              off={item.off}
-              onToggleOff={() => update(index, { off: !item.off })}
-            />
-          </div>
-        )}
-      </SortableList>
-      <button type="button" className="btn-ghost self-start" onClick={() => setItems([...items, { expr: "", dir: "ASC" }])}>
-        + ordenação
-      </button>
-    </>
+    <EditableList
+      items={state.orderBy}
+      onChange={(orderBy) => onChange({ orderBy })}
+      omittable
+      add={[{ label: "+ ordenação", make: (): OrderItem => ({ expr: "", dir: "ASC" }) }]}
+      renderRow={(item, _, update) => (
+        <>
+          <ExprInput
+            label="Expressão do ORDER BY"
+            className="min-w-0 flex-1"
+            placeholder="CAB.DTNEG"
+            value={item.expr}
+            onChange={(expr) => update({ expr })}
+          />
+          <select
+            aria-label="Direção"
+            className="input"
+            value={item.dir}
+            onChange={(event) => update({ dir: event.target.value as OrderItem["dir"] })}
+          >
+            <option>ASC</option>
+            <option>DESC</option>
+          </select>
+          <select
+            aria-label="Posição dos nulos"
+            className="input"
+            value={item.nulls ?? ""}
+            onChange={(event) => update({ nulls: (event.target.value || undefined) as OrderItem["nulls"] })}
+          >
+            <option value="">nulos: padrão</option>
+            <option value="FIRST">NULLS FIRST</option>
+            <option value="LAST">NULLS LAST</option>
+          </select>
+        </>
+      )}
+    />
   );
 }
 

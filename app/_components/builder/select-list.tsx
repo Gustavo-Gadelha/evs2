@@ -2,9 +2,7 @@
 
 import { AGG_FNS, type AggExpr, type AggFn, type Expr, type QueryState, type SelectItem } from "@/lib/sql/query-state";
 import { ExprInput } from "./expr-input";
-import { move, removeAt, replaceAt } from "./list";
-import { SortableList } from "./sortable-list";
-import { RowActions } from "./row-actions";
+import { EditableList } from "./editable-list";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
@@ -42,9 +40,6 @@ function AggEditor({ expr, onChange }: { expr: AggExpr; onChange: (expr: Expr) =
 
 export function SelectClause({ state, onChange }: Props) {
   const items = state.select;
-  const setItems = (select: SelectItem[]) => onChange({ select });
-  const update = (index: number, patch: Partial<SelectItem>) =>
-    setItems(replaceAt(items, index, { ...items[index], ...patch }));
 
   return (
     <>
@@ -53,20 +48,26 @@ export function SelectClause({ state, onChange }: Props) {
         DISTINCT
       </label>
       {items.length === 0 && <p className="text-xs text-zinc-500">Nenhuma coluna: SELECT *.</p>}
-      <SortableList items={items} onMove={(from, to) => setItems(move(items, from, to))}>
-        {(item, index, grip) => (
-          <div className={`flex items-center gap-1.5 ${item.off ? "opacity-50" : ""}`}>
-            {grip}
+      <EditableList
+        items={items}
+        onChange={(select) => onChange({ select })}
+        omittable
+        add={[
+          { label: "+ coluna", make: (): SelectItem => ({ expr: { kind: "raw", sql: "" } }) },
+          { label: "+ agregação", make: (): SelectItem => ({ expr: { kind: "agg", fn: "COUNT", arg: "", distinct: false } }) },
+        ]}
+        renderRow={(item, _, update) => (
+          <>
             {item.expr.kind === "raw" ? (
               <ExprInput
                 label="Coluna"
                 className="min-w-0 flex-1"
                 placeholder="CAB.NUNOTA"
                 value={item.expr.sql}
-                onChange={(sql) => update(index, { expr: { kind: "raw", sql } })}
+                onChange={(sql) => update({ expr: { kind: "raw", sql } })}
               />
             ) : (
-              <AggEditor expr={item.expr} onChange={(expr) => update(index, { expr })} />
+              <AggEditor expr={item.expr} onChange={(expr) => update({ expr })} />
             )}
             <input
               aria-label="Alias da coluna"
@@ -74,31 +75,11 @@ export function SelectClause({ state, onChange }: Props) {
               className="input w-28 font-mono"
               placeholder="alias"
               value={item.alias ?? ""}
-              onChange={(event) => update(index, { alias: event.target.value })}
+              onChange={(event) => update({ alias: event.target.value })}
             />
-            <RowActions
-              index={index}
-              count={items.length}
-              onMove={(to) => setItems(move(items, index, to))}
-              onRemove={() => setItems(removeAt(items, index))}
-              off={item.off}
-              onToggleOff={() => update(index, { off: !item.off })}
-            />
-          </div>
+          </>
         )}
-      </SortableList>
-      <div className="flex gap-2">
-        <button type="button" className="btn-ghost" onClick={() => setItems([...items, { expr: { kind: "raw", sql: "" } }])}>
-          + coluna
-        </button>
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={() => setItems([...items, { expr: { kind: "agg", fn: "COUNT", arg: "", distinct: false } }])}
-        >
-          + agregação
-        </button>
-      </div>
+      />
     </>
   );
 }
