@@ -2,7 +2,8 @@
 
 import { JOIN_TYPES, type Join, type JoinType, type QueryState } from "@/lib/sql/query-state";
 import { CondGroupEditor } from "./cond-group";
-import { TABLES_LIST } from "./dictionary";
+import { Combobox } from "./combobox";
+import { useDictionary } from "./dictionary";
 import { EditableList } from "./editable-list";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
@@ -14,17 +15,18 @@ function IdentInput(props: {
   onChange: (value: string) => void;
   placeholder: string;
   className: string;
-  list?: string;
+  suggest?: boolean;
 }) {
+  const { tables } = useDictionary();
   return (
-    <input
-      aria-label={props.label}
-      spellCheck={false}
-      list={props.list}
-      className={`input font-mono uppercase ${props.className}`}
+    <Combobox
+      label={props.label}
+      className={props.className}
+      inputClassName="font-mono uppercase"
       placeholder={props.placeholder}
       value={props.value}
-      onChange={(event) => props.onChange(event.target.value.toUpperCase())}
+      onChange={(value) => props.onChange(value.toUpperCase())}
+      getItems={props.suggest ? tables : () => []}
     />
   );
 }
@@ -34,7 +36,7 @@ export function FromClause({ state, onChange }: Props) {
     <div className="flex gap-1.5">
       <IdentInput
         label="Tabela"
-        list={TABLES_LIST}
+        suggest
         className="min-w-0 flex-1"
         placeholder="TGFCAB"
         value={state.from.table}
@@ -77,7 +79,7 @@ export function JoinsClause({ state, onChange }: Props) {
           </select>
           <IdentInput
             label="Tabela do join"
-            list={TABLES_LIST}
+            suggest
             className="min-w-0 flex-1"
             placeholder="TGFPAR"
             value={join.table}

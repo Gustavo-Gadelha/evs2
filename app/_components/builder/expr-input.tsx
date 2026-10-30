@@ -3,7 +3,8 @@
 import { useRef } from "react";
 
 import { ORACLE_FUNCTIONS, applyTemplate } from "@/lib/sql/functions";
-import { COLUMNS_LIST } from "./dictionary";
+import { Combobox } from "./combobox";
+import { useDictionary } from "./dictionary";
 
 type Props = {
   label: string;
@@ -17,6 +18,7 @@ type Props = {
 // (envolvendo o texto selecionado, se houver).
 export function ExprInput({ label, value, onChange, placeholder, className = "" }: Props) {
   const ref = useRef<HTMLInputElement>(null);
+  const { columns } = useDictionary();
 
   function insert(template: string) {
     const input = ref.current;
@@ -32,15 +34,15 @@ export function ExprInput({ label, value, onChange, placeholder, className = "" 
 
   return (
     <div className={`flex min-w-0 ${className}`}>
-      <input
-        ref={ref}
-        aria-label={label}
-        spellCheck={false}
-        list={COLUMNS_LIST}
-        className="input min-w-0 flex-1 rounded-r-none font-mono"
+      <Combobox
+        inputRef={ref}
+        label={label}
+        className="min-w-0 flex-1"
+        inputClassName="rounded-r-none font-mono"
         placeholder={placeholder}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={onChange}
+        getItems={columns}
       />
       <select
         aria-label={`Inserir função Oracle em ${label}`}

@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import { loadColumns, loadTables } from "@/lib/dictionary";
+import { buildIndex, search, type SearchIndex } from "@/lib/dictionary-search";
 import type { QueryState } from "@/lib/sql/query-state";
 import type { DictionaryEntry } from "@/lib/types";
 
-// `id`s dos <datalist> que os campos do builder referenciam em `list`.
-export const TABLES_LIST = "dictionary-tables";
-export const COLUMNS_LIST = "dictionary-columns";
+type Suggest = (query: string) => DictionaryEntry[];
+type DictionaryApi = { tables: Suggest; columns: Suggest };
 
-type Option = { value: string; label: string };
+const DictionaryContext = createContext<DictionaryApi>({ tables: () => [], columns: () => [] });
+
+// Sugestões (até 50, prefixo primeiro) de tabelas e de colunas (`ALIAS.COLUNA`) do dicionário.
+export const useDictionary = () => useContext(DictionaryContext);
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -27,10 +30,10 @@ function usedTables(state: QueryState, known: Set<string>) {
   return [...seen];
 }
 
-// Autocomplete de tabelas e colunas do dicionário do Sankhya, via <datalist> nativo. Falhar só tira as sugestões.
+// Fornece o autocomplete de tabelas e colunas do dicionário do Sankhya. Falhar só tira as sugestões.
 export function Dictionary({ state, children }: { state: QueryState; children: React.ReactNode }) {
   const [tables, setTables] = useState<DictionaryEntry[]>([]);
-  const [columns, setColumns] = useState<Option[]>([]);
+  const [columns, setColumns] = useState<DictionaryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,7 +49,7 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
     const pairs = usedKey ? usedKey.split(",").map((pair) => pair.split("=")) : [];
     Promise.all(
       pairs.map(async ([prefix, table]) =>
-        (await loadColumns(table)).map((column) => ({ value: `${prefix}.${column.name}`, label: column.description })),
+        (await loadColumns(table)).map((column) => ({ name: `${prefix}.${column.name}`, description: column.description })),
       ),
     ).then(
       (options) => {
@@ -63,20 +66,16 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
     };
   }, [usedKey]);
 
+  const api = useMemo<DictionaryApi>(() => {
+    const tableIndex: SearchIndex = buildIndex(tables);
+    const columnIndex: SearchIndex = buildIndex(columns);
+    return { tables: (query) => search(tableIndex, query), columns: (query) => search(columnIndex, query) };
+  }, [tables, columns]);
+
   return (
-    <>
-      <datalist id={TABLES_LIST}>
-        {tables.map((table) => (
-          <option key={table.name} value={table.name} label={table.description} />
-        ))}
-      </datalist>
-      <datalist id={COLUMNS_LIST}>
-        {columns.map((column) => (
-          <option key={column.value} value={column.value} label={column.label} />
-        ))}
-      </datalist>
+    <DictionaryContext value={api}>
       {error && <p className="text-xs text-zinc-500">Sugestões do dicionário indisponíveis: {error}</p>}
       {children}
-    </>
+    </DictionaryContext>
   );
 }

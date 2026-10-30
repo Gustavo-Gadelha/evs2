@@ -9,7 +9,7 @@ Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya 
 - **Somente leitura**: uma instrução `SELECT`/`WITH` por execução (ver "Trava de leitura").
 - **Um único endpoint do Sankhya**: `DbExplorerSP.executeQuery`. Nenhum outro serviço do gateway é chamado, exceto login/logout.
 - **Dicionário somente leitura**: tabelas e colunas sugeridas vêm de `TDDTAB`/`TDDCAM`, lidas pelo mesmo `executeQuery` (SQL montado no servidor, nome da tabela validado). Tabelas, aliases e expressões continuam digitados à mão; sem navegação em árvore nem parser.
-- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `lucide-react` (ícones) e, para o histórico e as consultas salvas, Prisma 7 com SQLite (`@prisma/client`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`; `prisma` no dev).
+- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones) e, para o histórico e as consultas salvas, Prisma 7 com SQLite (`@prisma/client`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`; `prisma` no dev).
 
 ## Integração com o Sankhya
 
@@ -155,14 +155,14 @@ lib/sql/to-oracle.ts        gerador
 lib/sql/read-only.ts        trava de leitura
 lib/sql/functions.ts        modelos do menu ƒ
 lib/sankhya/                auth, client, errors, redact, state, route, dictionary (TDDTAB/TDDCAM)
-lib/dictionary.ts           cliente do dicionário, com cache de promessas
+lib/dictionary.ts           cliente do dicionário, com cache de promessas; lib/dictionary-search.ts índice e busca ranqueada (até 50)
 lib/db/                     client Prisma (`client.ts`) e acesso a histórico/salvas (`store.ts`); `generated/` é gerado e ignorado pelo git
 lib/history.ts, lib/api.ts  tipos, limites e cliente HTTP do histórico e das salvas
 prisma/                     `schema.prisma` e migrações (aplicadas por `prisma migrate deploy` na subida do container)
 app/api/sankhya/query/      rota de consulta
 app/api/sankhya/dictionary/ rotas tables e columns
 app/api/history, app/api/saved/  rotas do SQLite
-app/_components/builder/    from-joins, select-list, cond-group, group-having, order-limit, dictionary (datalists)
+app/_components/builder/    from-joins, select-list, cond-group, group-having, order-limit, dictionary (contexto do autocomplete), combobox, editable-list
 app/_components/            explorer, auth-header, sql-editor, result-view, sidebar, save-form
 ```
 

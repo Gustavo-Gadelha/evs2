@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { loadColumns, loadTables } from "@/lib/dictionary";
+import { normalize } from "@/lib/dictionary-search";
 import type { DictionaryEntry } from "@/lib/types";
 
 const MAX_ROWS = 300;
@@ -12,10 +13,6 @@ function messageOf(err: unknown): string {
 }
 
 // "contém", sem diferenciar maiúsculas nem acentos (mesma regra do filtro da tabela de resultado).
-function normalize(text: string): string {
-  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-}
-
 function filterEntries(entries: DictionaryEntry[], query: string): DictionaryEntry[] {
   const needle = normalize(query.trim());
   if (!needle) return entries;
