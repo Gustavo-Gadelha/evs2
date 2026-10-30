@@ -2,14 +2,14 @@
 
 ## Objetivo
 
-Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya via `DbExplorerSP.executeQuery`: um builder visual gera o SQL, o editor permite ajustá-lo à mão, e o resultado aparece em tabela. Um único usuário (o desenvolvedor), rodando só na própria máquina. Nunca terá deploy.
+Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya via `DbExplorerSP.executeQuery`: um builder visual gera o SQL, o editor permite ajustá-lo à mão, e o resultado aparece em tabela. Um único usuário (o desenvolvedor), rodando só na própria máquina. Roda como build de produção (standalone) dentro do Docker Compose, nunca com deploy fora da máquina.
 
 ## Escopo
 
 - **Somente leitura**: uma instrução `SELECT`/`WITH` por execução (ver "Trava de leitura").
 - **Um único endpoint do Sankhya**: `DbExplorerSP.executeQuery`. Nenhum outro serviço do gateway é chamado, exceto login/logout.
-- **Sem esquema**: tabelas, aliases e expressões são digitados à mão; não há navegação no dicionário nem autocomplete.
-- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9) e `@tanstack/react-virtual`.
+- **Dicionário somente leitura**: tabelas e colunas sugeridas vêm de `TDDTAB`/`TDDCAM`, lidas pelo mesmo `executeQuery` (SQL montado no servidor, nome da tabela validado). Tabelas, aliases e expressões continuam digitados à mão; sem navegação em árvore nem parser.
+- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual` e, para o histórico e as consultas salvas, Prisma 7 com SQLite (`@prisma/client`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`; `prisma` no dev).
 
 ## Integração com o Sankhya
 
@@ -29,17 +29,23 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 | `POST /api/sankhya/login`  | Força novo login; devolve só `{ ok, authenticatedAt }`                                                                |
 | `POST /api/sankhya/logout` | Logout no Sankhya                                                                                                     |
 | `GET /api/sankhya/status`  | `{ authenticated, authenticatedAt, baseUrl }`                                                                         |
+| `GET /api/sankhya/dictionary/tables` | `[{ name, description }]` de `TDDTAB`, em cache no servidor                                                  |
+| `GET /api/sankhya/dictionary/columns?table=` | `[{ name, description }]` de `TDDCAM` para a tabela (400 `InvalidTable` se o nome não for um identificador Oracle) |
+| `GET/POST/DELETE /api/history` | Lista (sem o resultado, com `hasResult`), grava (e poda além de 200) e limpa o histórico no SQLite                |
+| `GET /api/history/[id]`    | Entrada completa, com o resultado quando guardado                                                                     |
+| `GET/POST /api/saved`, `DELETE /api/saved/[id]` | Consultas salvas no SQLite; cada uma devolve a lista atualizada                                  |
 
 `columns` segue `fieldsMetadata` ordenado por `order`; `rows` vem como o Sankhya devolve (mesma regra do `parse_query_result`).
 
 ## Proteções
 
 1. Credenciais só em `.env.local` (`SANKHYA_BASE_URL`, `SANKHYA_APPKEY`, `SANKHYA_TOKEN`, `SANKHYA_USERNAME`, `SANKHYA_PASSWORD`), sem `NEXT_PUBLIC_`, validadas com zod na subida (`instrumentation.ts`).
-2. Rotas da API respondem 404 fora de `NODE_ENV=development`.
+2. (Removida.) As rotas não checam mais `NODE_ENV`: o build standalone sempre roda em produção. A proteção passa a depender das proteções 3 e 4.
 3. Rotas recusam `Host` que não seja `localhost`/`127.0.0.1` e `Origin` presente e não local (DNS rebinding e cross-site).
-4. Só Docker Compose: `next dev` em `0.0.0.0:3100` dentro do container, publicado apenas em `127.0.0.1:3100`. `dev`/`build`/`start` do `package.json` saem com erro.
+4. Só Docker Compose: build standalone (`node server.js`) em `0.0.0.0:3100` dentro do container, publicado apenas em `127.0.0.1:3100`; as migrations rodam no serviço `migrate` antes do app. `dev`/`start` do `package.json` saem com erro; `build` roda `prisma generate && next build` e só serve ao Dockerfile.
 5. Senha, token, appkey e bearer token nunca aparecem em logs nem em respostas (headers e corpos passam por redação).
 6. O navegador não escolhe path, método nem headers: a única chamada ao gateway é a de `executeQuery`, montada no servidor.
+7. O banco SQLite (`/data/snk-assistant.db`) guarda dados reais do ERP: fica num volume Docker nomeado (`data`), fora do repositório e do bind mount; `lib/db/` começa com `import "server-only"` e as rotas `/api/history` e `/api/saved` passam pelas mesmas proteções 2 e 3 (`localOnly`).
 
 ## Trava de leitura
 
@@ -55,7 +61,7 @@ Limitações aceitas: pode recusar um SELECT legítimo que use uma dessas palavr
 
 ## Modelo do builder
 
-`lib/sql/query-state.ts`. Serializável; é o que vai para histórico, consultas salvas e `presets.ts`.
+`lib/sql/query-state.ts`. Serializável; é o que vai para histórico e consultas salvas.
 
 ```ts
 type QueryState = {
@@ -68,7 +74,9 @@ type QueryState = {
   having: CondGroup;
   orderBy: { expr: string; dir: "ASC" | "DESC"; nulls?: "FIRST" | "LAST" }[];
   limit: { rows: number; offset: number; style: "fetch" | "rownum" } | null;
+  omit?: Exclude<Section, "from">[]; // seções ignoradas na geração do SQL, mantidas no estado
 };
+// `off?: boolean` em colunas, joins, condições, grupos e ordenações: o item é ignorado no SQL, mas fica no builder.
 type Expr =
   | { kind: "raw"; sql: string }
   | { kind: "agg"; fn: "COUNT" | "SUM" | "AVG" | "MIN" | "MAX" | "LISTAGG"; arg: string; distinct: boolean };
@@ -118,8 +126,8 @@ type Cond = {
 
 Três colunas em telas largas; empilhadas em telas estreitas.
 
-- **Header**: base URL, status da sessão, Login/Logout.
-- **Builder**: seções recolhíveis FROM · JOINS · SELECT (+ DISTINCT) · WHERE (grupos AND/OR aninháveis) · GROUP BY (auto/manual) · HAVING · ORDER BY · LIMITE. Linhas com adicionar, remover e ↑↓. Problemas do gerador sob a seção de origem.
+- **Header**: base URL, status da sessão, Nova consulta, Login/Logout e, no canto direito, o menu "Omitir" (seções inteiras: JOINS, colunas, WHERE, GROUP BY, HAVING, ORDER BY, limite).
+- **Builder**: seções recolhíveis FROM · JOINS · SELECT (+ DISTINCT) · WHERE (grupos AND/OR aninháveis) · GROUP BY (auto/manual) · HAVING · ORDER BY · LIMITE. Linhas com adicionar, remover, ↑↓ e ◉/⊘ para omitir só aquele item do SQL (a seção mostra quantos estão omitidos). Campos de tabela e de expressão sugerem tabelas e `ALIAS.COLUNA` do dicionário (`<datalist>` nativo; falha do dicionário só tira as sugestões). Problemas do gerador sob a seção de origem.
 - **Editor SQL**: textarea monoespaçada.
   - Selo "gerado pelo builder": o editor acompanha o builder em tempo real.
   - Selo "editado à mão": a primeira edição manual congela o texto. "↺ regenerar" pede confirmação inline antes de descartar a edição.
@@ -135,9 +143,8 @@ Três colunas em telas largas; empilhadas em telas estreitas.
   - Colunas identificadas pelo índice (nomes podem repetir); largura calculada pelo conteúdo (72–420px).
   - Cada resultado novo começa sem filtros, ordenação ou colunas ocultas.
 - **Sidebar**:
-  - Consultas salvas: nome + `QueryState` + SQL + se foi editado à mão;
-  - Modelos: `presets.ts`, consultas de exemplo em `QueryState`, editáveis;
-  - Histórico: as últimas 50 execuções no `localStorage`, com SQL, estado, linhas, status e horário; o resultado só é guardado quando tem até ~200 KB, e só a entrada mais recente o mantém se a cota estourar; há botão de limpar.
+  - Consultas salvas: nome + `QueryState` + SQL + se foi editado à mão; no SQLite (as do antigo `localStorage` são importadas uma vez e removidas de lá);
+  - Histórico: as últimas 200 execuções no SQLite, com SQL, estado, linhas, status e horário; o resultado só é guardado quando tem até 5 MB (a listagem não o traz; clicar na entrada o busca); há botão de limpar.
   - Clicar em um item restaura builder e editor.
 
 ## Estrutura
@@ -147,11 +154,16 @@ lib/sql/query-state.ts      tipos + estado vazio
 lib/sql/to-oracle.ts        gerador
 lib/sql/read-only.ts        trava de leitura
 lib/sql/functions.ts        modelos do menu ƒ
-lib/sankhya/                auth, client, errors, redact, state, route (existentes)
+lib/sankhya/                auth, client, errors, redact, state, route, dictionary (TDDTAB/TDDCAM)
+lib/dictionary.ts           cliente do dicionário, com cache de promessas
+lib/db/                     client Prisma (`client.ts`) e acesso a histórico/salvas (`store.ts`); `generated/` é gerado e ignorado pelo git
+lib/history.ts, lib/api.ts  tipos, limites e cliente HTTP do histórico e das salvas
+prisma/                     `schema.prisma` e migrações (aplicadas por `prisma migrate deploy` na subida do container)
 app/api/sankhya/query/      rota de consulta
-app/_components/builder/    from-joins, select-list, cond-group, group-having, order-limit
+app/api/sankhya/dictionary/ rotas tables e columns
+app/api/history, app/api/saved/  rotas do SQLite
+app/_components/builder/    from-joins, select-list, cond-group, group-having, order-limit, dictionary (datalists)
 app/_components/            explorer, auth-header, sql-editor, result-view, sidebar, save-form
-presets.ts                  modelos em QueryState
 ```
 
 ## Verificação
@@ -160,7 +172,7 @@ Sem testes automatizados. `pnpm typecheck`; no container, contra um Sankhya fals
 
 ## Fora do escopo
 
-- Deploy, build de produção, multiusuário.
+- Deploy fora da máquina local, multiusuário.
 - Outros serviços do gateway; escrita no ERP.
 - Navegação no esquema, autocomplete, parser de SQL (edição manual não volta para o builder).
 - IA.
