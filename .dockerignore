@@ -1,5 +1,7 @@
 node_modules
 .next
+lib/db/generated
+prisma/*.db*
 .git
 .env*
 .idea

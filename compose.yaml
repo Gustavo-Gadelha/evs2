@@ -1,18 +1,32 @@
 services:
+  # Aplica as migrations no volume `data` antes de o app subir; roda como root só para ajustar o dono do volume.
+  migrate:
+    build:
+      context: .
+      target: migrate
+    user: root
+    command: ["sh", "-c", "pnpm exec prisma migrate deploy && chown -R node:node /data"]
+    environment:
+      DATABASE_URL: file:/data/snk-assistant.db
+    volumes:
+      - data:/data
+
   snk-assistant:
-    build: .
+    build:
+      context: .
+      target: runner
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     ports:
       # Só loopback: nunca "3100:3100", que exporia a ferramenta (e a sessão no Sankhya) na rede.
       - "127.0.0.1:3100:3100"
     env_file: .env.local
     environment:
-      NODE_ENV: development
-      WATCHPACK_POLLING: "true"
+      # Histórico e consultas salvas (dados reais do ERP): só no volume, nunca no repositório.
+      DATABASE_URL: file:/data/snk-assistant.db
     volumes:
-      - .:/app
-      - node_modules:/app/node_modules
-      - next:/app/.next
+      - data:/data
 
 volumes:
-  node_modules:
-  next:
+  data:

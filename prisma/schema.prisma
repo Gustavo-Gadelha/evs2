@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/db/generated"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// `state` e `result` guardam JSON como texto: são blobs opacos para o banco (QueryState e QueryResult).
+model HistoryEntry {
+  id        String   @id
+  createdAt DateTime @default(now())
+  sql       String
+  state     String
+  manual    Boolean
+  // null quando a execução falhou.
+  rowCount  Int?
+  error     String?
+  // null quando falhou ou passou de MAX_RESULT_BYTES.
+  result    String?
+
+  @@index([createdAt])
+}
+
+model SavedQuery {
+  id      String   @id
+  name    String
+  savedAt DateTime @default(now())
+  sql     String
+  state   String
+  manual  Boolean
+
+  @@index([savedAt])
+}

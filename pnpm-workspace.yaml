@@ -1,3 +1,11 @@
 allowBuilds:
+  # Binários pré-compilados vêm no pacote (prebuilds/); o node-gyp implícito do binding.gyp não deve rodar.
+  better-sqlite3: false
+  '@prisma/engines': true
+  prisma: true
   sharp: false
   unrs-resolver: false
+
+# O adaptador do Prisma pede better-sqlite3 ^12; força a 13, que traz os binários pré-compilados (glibc e musl).
+overrides:
+  better-sqlite3: 13.0.3

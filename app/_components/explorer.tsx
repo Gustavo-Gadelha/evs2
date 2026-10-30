@@ -2,27 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { history, savedQueries, toDraft, type HistoryEntry, type QueryDraft, type SavedQuery } from "@/lib/history";
+import { api } from "@/lib/api";
+import { history, savedQueries, toDraft, type HistoryEntry, type HistoryItem, type QueryDraft, type SavedQuery } from "@/lib/history";
 import { emptyQueryState, type QueryState } from "@/lib/sql/query-state";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { toOracleSql } from "@/lib/sql/to-oracle";
-import type { ApiError, AuthStatus, QueryResult } from "@/lib/types";
+import type { AuthStatus, QueryResult } from "@/lib/types";
 import { presets, type Preset } from "@/presets";
 import { AuthHeader } from "./auth-header";
 import { Builder } from "./builder/builder";
 import { ResultView } from "./result-view";
 import { Sidebar } from "./sidebar";
 import { SqlEditor } from "./sql-editor";
-
-async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...init?.headers } });
-  const data: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const message = (data as ApiError | null)?.error?.message ?? `${response.status} ${response.statusText}`;
-    throw new Error(message);
-  }
-  return data as T;
-}
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -38,7 +29,8 @@ export function Explorer() {
   const [status, setStatus] = useState<AuthStatus | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [historyItems, setHistoryItems] = useState<HistoryEntry[]>([]);
+  const [storeError, setStoreError] = useState<string | null>(null);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [saved, setSaved] = useState<SavedQuery[]>([]);
 
   const generated = useMemo(() => toOracleSql(queryState), [queryState]);
@@ -52,10 +44,16 @@ export function Explorer() {
   }, []);
 
   useEffect(() => {
-    // Carregado após montar: `localStorage` e a rota de status só existem no navegador.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHistoryItems(history.list());
-    setSaved(savedQueries.list());
+    // Carregado após montar: histórico e consultas salvas vêm das rotas, a de status só existe no navegador.
+    void (async () => {
+      try {
+        const imported = await savedQueries.importLegacy();
+        setSaved(imported ?? (await savedQueries.list()));
+        setHistoryItems(await history.list());
+      } catch (err) {
+        setStoreError(messageOf(err));
+      }
+    })();
     void refreshStatus();
   }, [refreshStatus]);
 
@@ -78,6 +76,28 @@ export function Explorer() {
     setManual(false);
   }
 
+  // Gravar no SQLite nunca derruba a consulta: a falha vira um aviso e a tela segue como está.
+  async function persist<T>(action: Promise<T>, apply: (value: T) => void) {
+    try {
+      apply(await action);
+      setStoreError(null);
+    } catch (err) {
+      setStoreError(messageOf(err));
+    }
+  }
+
+  async function loadHistory(item: HistoryItem) {
+    let entry: HistoryEntry = item;
+    if (item.hasResult) {
+      try {
+        entry = await history.get(item.id);
+      } catch (err) {
+        setStoreError(messageOf(err));
+      }
+    }
+    load(entry, entry);
+  }
+
   function load(draft: QueryDraft, previous?: HistoryEntry) {
     const next = toDraft(draft);
     setQueryState(next.state);
@@ -85,6 +105,11 @@ export function Explorer() {
     setManual(next.manual);
     setResult(previous?.result ?? null);
     setError(previous?.error ?? null);
+  }
+
+  function newQuery() {
+    if (sql.trim() && !window.confirm("Limpar a consulta atual e começar uma nova?")) return;
+    load({ state: emptyQueryState(), sql: "", manual: false });
   }
 
   function loadPreset(preset: Preset) {
@@ -106,12 +131,12 @@ export function Explorer() {
     try {
       const next = await api<QueryResult>("/api/sankhya/query", { method: "POST", body: JSON.stringify({ sql }) });
       setResult(next);
-      setHistoryItems(history.add(draft, { result: next }));
+      void persist(history.add(draft, { result: next }), setHistoryItems);
     } catch (err) {
       const message = messageOf(err);
       setResult(null);
       setError(message);
-      setHistoryItems(history.add(draft, { error: message }));
+      void persist(history.add(draft, { error: message }), setHistoryItems);
     } finally {
       setRunning(false);
       void refreshStatus();
@@ -158,19 +183,27 @@ export function Explorer() {
       {authError && (
         <div className="border-b border-red-900 bg-red-950/60 px-4 py-2 text-sm text-red-200">{authError}</div>
       )}
+      {storeError && (
+        <div className="border-b border-amber-900 bg-amber-950/60 px-4 py-2 text-sm text-amber-200">
+          Falha ao acessar o banco local: {storeError}
+        </div>
+      )}
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
         <Sidebar
           presets={presets}
           history={historyItems}
           saved={saved}
           onLoadPreset={loadPreset}
-          onLoadHistory={(entry) => load(entry, entry)}
+          onLoadHistory={(item) => void loadHistory(item)}
           onLoadSaved={(query) => load(query)}
-          onSaveHistory={(name, entry) => setSaved(savedQueries.save(name, entry))}
-          onRemoveSaved={(id) => setSaved(savedQueries.remove(id))}
-          onClearHistory={() => setHistoryItems(history.clear())}
+          onSaveHistory={(name, item) => void persist(savedQueries.save(name, item), setSaved)}
+          onRemoveSaved={(id) => void persist(savedQueries.remove(id), setSaved)}
+          onClearHistory={() => void persist(history.clear(), setHistoryItems)}
         />
-        <main className="min-w-0 p-4">
+        <main className="flex min-w-0 flex-col gap-3 p-4">
+          <button type="button" className="btn self-start" onClick={newQuery}>
+            Nova consulta
+          </button>
           <Builder state={queryState} problems={generated.problems} onChange={changeState} />
         </main>
         <div className="flex min-w-0 flex-col gap-4 p-4 lg:col-start-2 xl:col-start-auto">
@@ -182,7 +215,7 @@ export function Explorer() {
             onChange={changeSql}
             onRegenerate={regenerate}
             onRun={run}
-            onSave={(name) => setSaved(savedQueries.save(name, { state: queryState, sql, manual }))}
+            onSave={(name) => void persist(savedQueries.save(name, { state: queryState, sql, manual }), setSaved)}
           />
           <ResultView result={result} error={error} />
         </div>

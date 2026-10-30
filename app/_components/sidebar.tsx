@@ -1,17 +1,17 @@
 "use client";
 
-import type { HistoryEntry, SavedQuery } from "@/lib/history";
+import { MAX_HISTORY, type HistoryItem, type SavedQuery } from "@/lib/history";
 import type { Preset } from "@/presets";
 import { SaveForm } from "./save-form";
 
 type Props = {
   presets: Preset[];
-  history: HistoryEntry[];
+  history: HistoryItem[];
   saved: SavedQuery[];
   onLoadPreset: (preset: Preset) => void;
-  onLoadHistory: (entry: HistoryEntry) => void;
+  onLoadHistory: (entry: HistoryItem) => void;
   onLoadSaved: (query: SavedQuery) => void;
-  onSaveHistory: (name: string, entry: HistoryEntry) => void;
+  onSaveHistory: (name: string, entry: HistoryItem) => void;
   onRemoveSaved: (id: string) => void;
   onClearHistory: () => void;
 };
@@ -72,7 +72,7 @@ export function Sidebar(props: Props) {
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <h2 className="label">Histórico ({history.length}/50)</h2>
+          <h2 className="label">Histórico ({history.length}/{MAX_HISTORY})</h2>
           <button type="button" className="btn-ghost" disabled={history.length === 0} onClick={onClearHistory}>
             Limpar
           </button>

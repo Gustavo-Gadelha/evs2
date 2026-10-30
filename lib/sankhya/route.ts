@@ -23,13 +23,9 @@ function isLocalOrigin(origin: string): boolean {
   }
 }
 
-// Fora de `development` as rotas não existem; em desenvolvimento, só aceitam o próprio navegador
-// na máquina local (bloqueia DNS rebinding pelo `Host` e requisições cross-site pelo `Origin`).
+// As rotas só aceitam o próprio navegador na máquina local (bloqueia DNS rebinding pelo `Host` e
+// requisições cross-site pelo `Origin`).
 function rejectNonLocal(request: Request): Response | null {
-  if (process.env.NODE_ENV !== "development") {
-    return new Response("Not Found", { status: 404 });
-  }
-
   const host = request.headers.get("host");
   if (!host || !LOCAL_HOSTNAMES.has(hostnameOf(host))) {
     return Response.json({ error: { type: "Forbidden", message: "Host não local." } }, { status: 403 });
@@ -54,12 +50,12 @@ export function errorResponse(err: unknown): Response {
   return Response.json({ error: { type: "InternalError", message: "Erro inesperado no servidor." } }, { status: 500 });
 }
 
-export function localOnly(handler: (request: Request) => Promise<Response>) {
-  return async (request: Request): Promise<Response> => {
+export function localOnly<C = unknown>(handler: (request: Request, context: C) => Promise<Response>) {
+  return async (request: Request, context: C): Promise<Response> => {
     const rejection = rejectNonLocal(request);
     if (rejection) return rejection;
     try {
-      return await handler(request);
+      return await handler(request, context);
     } catch (err) {
       return errorResponse(err);
     }

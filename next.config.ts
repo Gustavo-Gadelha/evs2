@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // O dev server sobe em 0.0.0.0 dentro do container; libera o HMR também quando aberto por 127.0.0.1.
-  allowedDevOrigins: ["127.0.0.1"],
+  output: "standalone",
   poweredByHeader: false,
+  // O rastreamento do build standalone não enxerga o binding nativo, carregado em runtime pelo better-sqlite3.
+  outputFileTracingIncludes: {
+    "/*": ["./node_modules/better-sqlite3/prebuilds/linuxmusl-*.node"],
+  },
 };
 
 export default nextConfig;
