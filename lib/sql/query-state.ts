@@ -59,15 +59,6 @@ export type QueryState = {
 export type Section = "from" | "joins" | "select" | "where" | "groupBy" | "having" | "orderBy" | "limit";
 export type OmittableSection = Exclude<Section, "from">;
 
-export const OMITTABLE_SECTIONS: { section: OmittableSection; label: string }[] = [
-  { section: "joins", label: "JOINS" },
-  { section: "select", label: "Colunas (SELECT *)" },
-  { section: "where", label: "WHERE" },
-  { section: "groupBy", label: "GROUP BY" },
-  { section: "having", label: "HAVING" },
-  { section: "orderBy", label: "ORDER BY" },
-  { section: "limit", label: "Limite (FETCH NEXT)" },
-];
 export type Problem = { section: Section; message: string };
 
 export const DEFAULT_LIMIT: Limit = { rows: 100, offset: 0, style: "fetch" };

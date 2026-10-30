@@ -171,11 +171,9 @@ export function Explorer() {
       <AuthHeader
         status={status}
         busy={authBusy}
-        omit={queryState.omit ?? []}
         onNewQuery={newQuery}
         onLogin={() => authAction("/api/sankhya/login")}
         onLogout={() => authAction("/api/sankhya/logout")}
-        onOmitChange={(omit) => changeState({ ...queryState, omit })}
       />
       {authError && (
         <div className="border-b border-red-900 bg-red-950/60 px-4 py-2 text-sm text-red-200">{authError}</div>

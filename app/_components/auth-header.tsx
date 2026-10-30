@@ -1,18 +1,14 @@
-import type { OmittableSection } from "@/lib/sql/query-state";
 import type { AuthStatus } from "@/lib/types";
-import { OmitMenu } from "./omit-menu";
 
 type Props = {
   status: AuthStatus | null;
   busy: boolean;
-  omit: OmittableSection[];
   onNewQuery: () => void;
   onLogin: () => void;
   onLogout: () => void;
-  onOmitChange: (omit: OmittableSection[]) => void;
 };
 
-export function AuthHeader({ status, busy, omit, onNewQuery, onLogin, onLogout, onOmitChange }: Props) {
+export function AuthHeader({ status, busy, onNewQuery, onLogin, onLogout }: Props) {
   const authenticated = status?.authenticated ?? false;
 
   return (
@@ -43,7 +39,6 @@ export function AuthHeader({ status, busy, omit, onNewQuery, onLogin, onLogout, 
         <button type="button" className="btn" disabled={busy || !authenticated} onClick={onLogout}>
           Logout
         </button>
-        <OmitMenu omit={omit} onChange={onOmitChange} />
       </div>
     </header>
   );
