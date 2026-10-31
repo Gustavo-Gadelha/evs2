@@ -129,7 +129,7 @@ type Cond = {
 
 Três colunas em telas largas; empilhadas em telas estreitas.
 
-- **Header**: navbar de uma barra com Perfis (`src/components/nav-item.tsx`): o item desenha um fio de sublinhado só com `transform` (cresce do início inline no hover e no foco e recolhe para o fim ao sair; invertido em RTL; sem animação com `prefers-reduced-motion`), e mantém a linha cheia enquanto o diálogo está aberto (`aria-current`). Ao lado: seletor de perfil, base URL, status da sessão e Login/Logout.
+- **Header**: título e selo "local · dev-only" à esquerda; à direita, seletor de perfil, botão Perfis (diálogo de cadastro), base URL, status da sessão e Login/Logout, com o mesmo estilo (`outline`, tamanho `sm`). `src/components/nav-item.tsx` (item de navegação com fio de sublinhado animado só com `transform`, invertido em RTL e sem animação com `prefers-reduced-motion`) está disponível, mas nenhum item o usa hoje.
 - **Builder**: seções recolhíveis FROM · JOINS · SELECT (+ DISTINCT) · WHERE (grupos AND/OR aninháveis) · GROUP BY (auto/manual) · HAVING · ORDER BY · LIMITE. Cada bloco, exceto FROM, tem no cabeçalho um checkbox "omitir" que tira a seção inteira do SQL sem apagá-la (SELECT omitido vira `SELECT *`). Linhas com adicionar, remover, ↑↓, arrastar pelo ícone de grip à esquerda (colunas, joins, condições, grupos e ordenações; também pelo teclado) e ◉/⊘ para omitir só aquele item do SQL (a seção mostra quantos estão omitidos). Campos de tabela e de expressão sugerem tabelas e `ALIAS.COLUNA` do dicionário (`<datalist>` nativo; falha do dicionário só tira as sugestões). Problemas do gerador sob a seção de origem.
 - **Editor SQL**: textarea monoespaçada.
   - Selo "gerado pelo builder": o editor acompanha o builder em tempo real.

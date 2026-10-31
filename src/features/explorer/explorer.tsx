@@ -230,7 +230,6 @@ export function Explorer() {
         profiles={profileState.profiles}
         activeId={profileState.activeId}
         busy={authBusy}
-        profilesOpen={profilesOpen}
         onOpenProfiles={() => setProfilesOpen(true)}
         onSelectProfile={(id) => void selectProfile(id)}
         onLogin={() => authAction("/api/sankhya/login")}
