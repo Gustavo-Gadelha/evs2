@@ -187,7 +187,7 @@ entrypoint.sh               valida `DATABASE_URL` e `ENCRYPTION_KEY`, aplica as 
 
 ## Verificação
 
-Sem testes automatizados. `pnpm typecheck`; no container, contra um Sankhya falso: SQL gerado para join + agregação + HAVING, WHERE aninhado, os dois estilos de limite e escape de aspas; casos da trava de leitura que devem passar e ser recusados; no banco, subir o compose do zero (migrations aplicadas, colunas `jsonb`), reiniciar o app sem perder perfis, histórico nem consultas salvas, e gravar um resultado com NUL (entra sem o resultado); no navegador, o fluxo montar → editar à mão → regenerar → rodar → salvar → recarregar do histórico.
+Só há testes automatizados do SQL (`pnpm test:sql`, `node --test` sobre `src/lib/sql/`: gerador e trava de leitura; sem testes da aplicação nem CI). `pnpm typecheck`; no container, contra um Sankhya falso: SQL gerado para join + agregação + HAVING, WHERE aninhado, os dois estilos de limite e escape de aspas; casos da trava de leitura que devem passar e ser recusados; no banco, subir o compose do zero (migrations aplicadas, colunas `jsonb`), reiniciar o app sem perder perfis, histórico nem consultas salvas, e gravar um resultado com NUL (entra sem o resultado); no navegador, o fluxo montar → editar à mão → regenerar → rodar → salvar → recarregar do histórico.
 
 ## Fora do escopo
 
