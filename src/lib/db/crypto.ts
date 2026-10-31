@@ -2,16 +2,16 @@ import "server-only";
 
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-// Cifra os segredos dos perfis (AES-256-GCM). A chave (32 bytes em base64) vem de `SNK_ENCRYPTION_KEY` no `.env`,
+// Cifra os segredos dos perfis (AES-256-GCM). A chave (32 bytes em base64) vem de `ENCRYPTION_KEY` no `.env`,
 // fora do banco e do repositório: protege um dump do Postgres copiado sozinho, não quem lê o `.env`.
 // Gere uma com `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Trocá-la invalida os perfis salvos.
 const globalForKey = globalThis as unknown as { snkKey?: Buffer };
 
 function loadKey(): Buffer {
-  const raw = process.env.SNK_ENCRYPTION_KEY;
-  if (!raw) throw new Error("SNK_ENCRYPTION_KEY não definida (ver .env.example).");
+  const raw = process.env.ENCRYPTION_KEY;
+  if (!raw) throw new Error("ENCRYPTION_KEY não definida (ver .env.example).");
   const key = Buffer.from(raw, "base64");
-  if (key.length !== 32) throw new Error("SNK_ENCRYPTION_KEY deve ter 32 bytes em base64.");
+  if (key.length !== 32) throw new Error("ENCRYPTION_KEY deve ter 32 bytes em base64.");
   return key;
 }
 

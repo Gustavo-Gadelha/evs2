@@ -31,7 +31,7 @@ services:
       # Histórico, consultas salvas e perfis (dados reais do ERP): só no volume `pgdata`, nunca no repositório.
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # Chave que cifra os segredos dos perfis: vem do `.env`, separada do banco.
-      SNK_ENCRYPTION_KEY: ${SNK_ENCRYPTION_KEY:?defina SNK_ENCRYPTION_KEY no .env}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?defina ENCRYPTION_KEY no .env}
 
 volumes:
   pgdata:

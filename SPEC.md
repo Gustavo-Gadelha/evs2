@@ -42,7 +42,7 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 
 ## Proteções
 
-1. Credenciais só nos perfis do Postgres (`Profile.secret`: appkey, token, usuário e senha em JSON cifrado com AES-256-GCM, `src/lib/db/crypto.ts`). A chave (32 bytes em base64) vem de `SNK_ENCRYPTION_KEY` no `.env`, fora do banco e do repositório: protege um dump do Postgres copiado sozinho, não quem lê o `.env`; trocá-la invalida os perfis salvos. Appkey, token e senha nunca saem do servidor (as rotas de perfil só devolvem nome, base URL e usuário), sem `NEXT_PUBLIC_`; a redação de logs cobre os segredos de todos os perfis. As únicas credenciais em `.env` são as do próprio Postgres (`POSTGRES_*`, `DATABASE_URL`) e a chave de cifra (`SNK_ENCRYPTION_KEY`); o `.env` é ignorado pelo git e pelo Docker, e o `.env.example` traz só placeholders; nada do Sankhya fica em `.env*` nem no `compose.yaml`.
+1. Credenciais só nos perfis do Postgres (`Profile.secret`: appkey, token, usuário e senha em JSON cifrado com AES-256-GCM, `src/lib/db/crypto.ts`). A chave (32 bytes em base64) vem de `ENCRYPTION_KEY` no `.env`, fora do banco e do repositório: protege um dump do Postgres copiado sozinho, não quem lê o `.env`; trocá-la invalida os perfis salvos. Appkey, token e senha nunca saem do servidor (as rotas de perfil só devolvem nome, base URL e usuário), sem `NEXT_PUBLIC_`; a redação de logs cobre os segredos de todos os perfis. As únicas credenciais em `.env` são as do próprio Postgres (`POSTGRES_*`, `DATABASE_URL`) e a chave de cifra (`ENCRYPTION_KEY`); o `.env` é ignorado pelo git e pelo Docker, e o `.env.example` traz só placeholders; nada do Sankhya fica em `.env*` nem no `compose.yaml`.
 2. (Removida.) As rotas não checam `NODE_ENV`; a proteção depende das proteções 3 e 4.
 3. Rotas recusam `Host` que não seja `localhost`/`127.0.0.1` e `Origin` presente e não local (DNS rebinding e cross-site).
 4. Só na máquina local: Docker Compose ou `pnpm dev`. `pnpm dev` roda `prisma generate`, `prisma migrate deploy` e `next dev --hostname 127.0.0.1 --port 3100` (loopback, nunca `0.0.0.0`), com o Postgres do compose (`docker compose up -d postgres`; `DATABASE_URL` do `.env`). No Docker: build standalone (`node server.js`) em `0.0.0.0:3100` dentro do container, publicado apenas em `127.0.0.1:3100`; o Postgres (imagem `postgres:18-alpine`, serviço `postgres`) só é publicado em `127.0.0.1:${POSTGRES_PORT}` e o app só sobe depois do healthcheck dele; o `entrypoint.sh` aplica as migrations (CLI do Prisma isolado em `/opt/prisma`) antes de iniciar o app. O `package.json` não tem script `start`; `build` roda `prisma generate && next build` e só serve ao Dockerfile.
@@ -170,8 +170,8 @@ src/features/explorer/      explorer (orquestra a tela; page.tsx importa daqui)
 src/features/profiles/      profiles (tipos e cliente HTTP); components/profiles-dialog; server/: store (Prisma + cache decifrado em memória) e handlers profiles, profile-by-id, active
 prisma/                     `schema.prisma` (PostgreSQL; `state` e `result` em jsonb) e migrações (aplicadas por `prisma migrate deploy` no `pnpm dev` e pelo `entrypoint.sh` na subida do container)
 compose.yaml                serviços `postgres` (postgres:18-alpine, volume `pgdata`, healthcheck) e `snk-assistant`; lê o `.env`
-entrypoint.sh               valida `DATABASE_URL` e `SNK_ENCRYPTION_KEY`, aplica as migrations e executa o servidor (`exec`)
-.env.example                modelo do `.env` (Postgres, `DATABASE_URL`, `SNK_ENCRYPTION_KEY`); o `.env` é ignorado pelo git e pelo Docker
+entrypoint.sh               valida `DATABASE_URL` e `ENCRYPTION_KEY`, aplica as migrations e executa o servidor (`exec`)
+.env.example                modelo do `.env` (Postgres, `DATABASE_URL`, `ENCRYPTION_KEY`); o `.env` é ignorado pelo git e pelo Docker
 ```
 
 ## Verificação

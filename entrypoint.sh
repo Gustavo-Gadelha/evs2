@@ -3,7 +3,7 @@
 set -eu
 
 : "${DATABASE_URL:?DATABASE_URL não definida (o compose.yaml a define).}"
-: "${SNK_ENCRYPTION_KEY:?SNK_ENCRYPTION_KEY não definida (o compose.yaml a define).}"
+: "${ENCRYPTION_KEY:?ENCRYPTION_KEY não definida (o compose.yaml a define).}"
 
 case "$DATABASE_URL" in
   postgres://* | postgresql://*) ;;
