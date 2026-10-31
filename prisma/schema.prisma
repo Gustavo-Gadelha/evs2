@@ -7,18 +7,18 @@ datasource db {
   provider = "postgresql"
 }
 
-// `state` e `result` guardam JSON como texto: são blobs opacos para o banco (QueryState e QueryResult).
+// `state` (QueryState) e `result` (QueryResult) são jsonb: o banco consegue filtrar por dentro deles.
 model HistoryEntry {
   id        String   @id
   createdAt DateTime @default(now())
   sql       String
-  state     String
+  state     Json
   manual    Boolean
   // null quando a execução falhou.
   rowCount  Int?
   error     String?
   // null quando falhou ou passou de MAX_RESULT_BYTES.
-  result    String?
+  result    Json?
 
   @@index([createdAt])
 }
@@ -28,7 +28,7 @@ model SavedQuery {
   name    String
   savedAt DateTime @default(now())
   sql     String
-  state   String
+  state   Json
   manual  Boolean
 
   @@index([savedAt])

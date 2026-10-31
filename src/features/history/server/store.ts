@@ -4,7 +4,7 @@ import { MAX_HISTORY, MAX_RESULT_BYTES, type HistoryEntry, type HistoryItem, typ
 import type { QueryState } from "@/lib/sql/query-state";
 import type { QueryResult } from "@/lib/types";
 import { db } from "@/lib/db/client";
-import type { HistoryEntry as HistoryRow, SavedQuery as SavedRow } from "@/lib/db/generated/client";
+import { Prisma, type HistoryEntry as HistoryRow, type SavedQuery as SavedRow } from "@/lib/db/generated/client";
 
 export type NewHistory = {
   state: QueryState;
@@ -22,7 +22,7 @@ function toItem(row: Omit<HistoryRow, "result">, hasResult: boolean): HistoryIte
     id: row.id,
     timestamp: row.createdAt.toISOString(),
     sql: row.sql,
-    state: JSON.parse(row.state) as QueryState,
+    state: row.state as unknown as QueryState,
     manual: row.manual,
     rowCount: row.rowCount,
     error: row.error,
@@ -36,7 +36,7 @@ function toSaved(row: SavedRow): SavedQuery {
     name: row.name,
     savedAt: row.savedAt.toISOString(),
     sql: row.sql,
-    state: JSON.parse(row.state) as QueryState,
+    state: row.state as unknown as QueryState,
     manual: row.manual,
   };
 }
@@ -49,7 +49,7 @@ export async function listHistory(): Promise<HistoryItem[]> {
     omit: { result: true },
   });
   const withResult = new Set(
-    (await db().historyEntry.findMany({ where: { result: { not: null } }, select: { id: true } })).map((row) => row.id),
+    (await db().historyEntry.findMany({ where: { result: { not: Prisma.DbNull } }, select: { id: true } })).map((row) => row.id),
   );
   return rows.map((row) => toItem(row, withResult.has(row.id)));
 }
@@ -58,21 +58,27 @@ export async function getHistory(id: string): Promise<HistoryEntry | null> {
   const row = await db().historyEntry.findUnique({ where: { id } });
   if (!row) return null;
   const { hasResult, ...item } = toItem(row, row.result !== null);
-  return { ...item, result: hasResult ? (JSON.parse(row.result!) as QueryResult) : undefined };
+  return { ...item, result: hasResult ? (row.result as unknown as QueryResult) : undefined };
 }
 
 export async function addHistory(entry: NewHistory): Promise<HistoryItem[]> {
-  const result = entry.result ? JSON.stringify(entry.result) : null;
+  const serialized = entry.result ? JSON.stringify(entry.result) : null;
+  // Mesmo limite que o cliente aplica: a rota não confia no que recebe. O Postgres também recusa `\u0000` em jsonb
+  // (o Oracle pode devolvê-lo): nesse caso a entrada é gravada sem o resultado, em vez de falhar inteira.
+  const keepResult =
+    entry.result !== undefined &&
+    serialized !== null &&
+    Buffer.byteLength(serialized) <= MAX_RESULT_BYTES &&
+    !serialized.includes("\\u0000");
   await db().historyEntry.create({
     data: {
       id: crypto.randomUUID(),
       sql: entry.sql,
-      state: JSON.stringify(entry.state),
+      state: entry.state as unknown as Prisma.InputJsonValue,
       manual: entry.manual,
       rowCount: entry.rowCount,
       error: entry.error,
-      // Mesmo limite que o cliente aplica: a rota não confia no que recebe.
-      result: result !== null && Buffer.byteLength(result) <= MAX_RESULT_BYTES ? result : null,
+      result: keepResult ? (entry.result as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
     },
   });
   const stale = await db().historyEntry.findMany({
@@ -98,7 +104,7 @@ export async function addSaved(query: NewSaved): Promise<SavedQuery[]> {
       id: crypto.randomUUID(),
       name: query.name,
       sql: query.sql,
-      state: JSON.stringify(query.state),
+      state: query.state as unknown as Prisma.InputJsonValue,
       manual: query.manual,
       ...(query.savedAt ? { savedAt: new Date(query.savedAt) } : {}),
     },
