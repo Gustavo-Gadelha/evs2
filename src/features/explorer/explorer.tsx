@@ -60,19 +60,27 @@ export function Explorer() {
     setActiveId(tab.id);
   }
 
-  function closeTab(id: string) {
-    const index = tabs.findIndex((tab) => tab.id === id);
-    if (index === -1) return;
-    if (tabs.length === 1) {
-      // A última aba não some: volta em branco.
+  // Fecha várias abas de uma vez. Sobrando nenhuma, volta uma em branco. Se a ativa for fechada, fica ativa
+  // `focusId` (a aba do menu de contexto) ou, sem ele, a vizinha que sobrou, de preferência a da direita.
+  function closeTabs(ids: string[], focusId?: string) {
+    const closing = new Set(ids);
+    const rest = tabs.filter((tab) => !closing.has(tab.id));
+    if (rest.length === tabs.length) return;
+    if (rest.length === 0) {
       const fresh = newTab(nextNumber.current++);
       setTabs([fresh]);
       setActiveId(fresh.id);
       return;
     }
-    const rest = tabs.filter((tab) => tab.id !== id);
     setTabs(rest);
-    if (id === activeId) setActiveId(rest[Math.min(index, rest.length - 1)].id);
+    if (!closing.has(activeId)) return;
+    if (focusId && rest.some((tab) => tab.id === focusId)) {
+      setActiveId(focusId);
+      return;
+    }
+    const activeIndex = tabs.findIndex((tab) => tab.id === activeId);
+    const next = tabs.slice(activeIndex).find((tab) => !closing.has(tab.id)) ?? rest[rest.length - 1];
+    setActiveId(next.id);
   }
 
   const refreshStatus = useCallback(async () => {
@@ -294,7 +302,7 @@ export function Explorer() {
         tabs={tabs}
         activeId={active.id}
         onSelect={setActiveId}
-        onClose={closeTab}
+        onClose={closeTabs}
         onAdd={() => addTab()}
       />
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
