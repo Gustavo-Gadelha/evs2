@@ -1,37 +1,18 @@
 import "server-only";
 
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
 
-import { databaseUrl } from "./client";
-
-// Cifra os segredos dos perfis (AES-256-GCM). A chave fica num arquivo ao lado do banco, fora do repositório:
-// protege o `.db` copiado sozinho (backup, anexo), não quem lê o volume inteiro.
-const KEY_FILE = "snk-assistant.key";
-
+// Cifra os segredos dos perfis (AES-256-GCM). A chave (32 bytes em base64) vem de `SNK_ENCRYPTION_KEY` no `.env`,
+// fora do banco e do repositório: protege um dump do Postgres copiado sozinho, não quem lê o `.env`.
+// Gere uma com `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Trocá-la invalida os perfis salvos.
 const globalForKey = globalThis as unknown as { snkKey?: Buffer };
 
 function loadKey(): Buffer {
-  const dbPath = resolve(databaseUrl().replace(/^file:/, ""));
-  const keyPath = join(dirname(dbPath), KEY_FILE);
-
-  try {
-    return Buffer.from(readFileSync(keyPath, "utf8").trim(), "base64");
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-  }
-
-  const key = randomBytes(32);
-  mkdirSync(dirname(keyPath), { recursive: true });
-  try {
-    // `wx`: se outra requisição criou a chave no meio-tempo, usa a dela em vez de sobrescrever.
-    writeFileSync(keyPath, key.toString("base64"), { flag: "wx", mode: 0o600 });
-    return key;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
-    return Buffer.from(readFileSync(keyPath, "utf8").trim(), "base64");
-  }
+  const raw = process.env.SNK_ENCRYPTION_KEY;
+  if (!raw) throw new Error("SNK_ENCRYPTION_KEY não definida (ver .env.example).");
+  const key = Buffer.from(raw, "base64");
+  if (key.length !== 32) throw new Error("SNK_ENCRYPTION_KEY deve ter 32 bytes em base64.");
+  return key;
 }
 
 function key(): Buffer {

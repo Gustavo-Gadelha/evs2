@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // `state` e `result` guardam JSON como texto: são blobs opacos para o banco (QueryState e QueryResult).

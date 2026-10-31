@@ -1,4 +1,4 @@
-// Histórico e consultas salvas, persistidos em SQLite pelas rotas `/api/history` e `/api/saved`.
+// Histórico e consultas salvas, persistidos no Postgres pelas rotas `/api/history` e `/api/saved`.
 
 import { api } from "@/lib/api";
 import type { QueryState } from "@/lib/sql/query-state";
@@ -63,7 +63,7 @@ export const savedQueries = {
 
   remove: (id: string) => api<SavedQuery[]>(`/api/saved/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
-  // Consultas salvas no `localStorage` antes do SQLite: envia ao banco e limpa o storage.
+  // Consultas salvas no `localStorage` antes do banco: envia ao banco e limpa o storage.
   async importLegacy(): Promise<SavedQuery[] | null> {
     let legacy: SavedQuery[];
     try {
