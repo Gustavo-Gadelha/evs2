@@ -6,6 +6,7 @@ import { loadColumns, loadTables } from "../client";
 import { buildIndex, search, type SearchIndex } from "../search";
 import type { QueryState } from "@/lib/sql/query-state";
 import type { DictionaryEntry } from "@/lib/types";
+import { toast } from "sonner";
 
 type Suggest = (query: string) => DictionaryEntry[];
 type DictionaryApi = { tables: Suggest; columns: Suggest };
@@ -17,6 +18,11 @@ export const useDictionary = () => useContext(DictionaryContext);
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+// Falhar só tira as sugestões; id fixo para o aviso não se repetir a cada tabela.
+function warn(err: unknown) {
+  toast.warning("Sugestões do dicionário indisponíveis", { id: "dictionary-suggest", description: messageOf(err) });
 }
 
 // Tabelas usadas no FROM/JOINS que existem no dicionário, com o prefixo (alias ou nome) das colunas.
@@ -34,10 +40,9 @@ function usedTables(state: QueryState, known: Set<string>) {
 export function Dictionary({ state, children }: { state: QueryState; children: React.ReactNode }) {
   const [tables, setTables] = useState<DictionaryEntry[]>([]);
   const [columns, setColumns] = useState<DictionaryEntry[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTables().then(setTables, (err) => setError(messageOf(err)));
+    loadTables().then(setTables, warn);
   }, []);
 
   const known = useMemo(() => new Set(tables.map((table) => table.name)), [tables]);
@@ -55,10 +60,9 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
       (options) => {
         if (cancelled) return;
         setColumns(options.flat());
-        setError(null);
       },
       (err) => {
-        if (!cancelled) setError(messageOf(err));
+        if (!cancelled) warn(err);
       },
     );
     return () => {
@@ -74,7 +78,6 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
 
   return (
     <DictionaryContext value={api}>
-      {error && <p className="text-xs text-muted-foreground">Sugestões do dicionário indisponíveis: {error}</p>}
       {children}
     </DictionaryContext>
   );

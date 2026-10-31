@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { toast } from "sonner";
 
 type Props = {
   state: ProfilesState;
@@ -34,29 +35,26 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
   const [editing, setEditing] = useState<string | null>(state.profiles.length === 0 ? "new" : null);
   const [form, setForm] = useState<ProfileInput>(EMPTY);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function startNew() {
     setForm(EMPTY);
     setEditing("new");
-    setError(null);
   }
 
   function startEdit(profile: Profile) {
     setForm({ ...EMPTY, name: profile.name, baseUrl: profile.baseUrl, username: profile.username });
     setEditing(profile.id);
-    setError(null);
   }
 
-  async function run(action: () => Promise<ProfilesState>, after?: () => void) {
+  async function run(action: () => Promise<ProfilesState>, success: string, after?: () => void) {
     setBusy(true);
-    setError(null);
     try {
       onChange(await action());
+      toast.success(success);
       after?.();
     } catch (err) {
-      setError(messageOf(err));
+      toast.error("Não foi possível concluir", { description: messageOf(err) });
     } finally {
       setBusy(false);
     }
@@ -65,10 +63,10 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (editing === "new") {
-      void run(() => api.create(form), () => setEditing(null));
+      void run(() => api.create(form), "Perfil salvo", () => setEditing(null));
     } else if (editing) {
       const id = editing;
-      void run(() => api.update(id, form), () => setEditing(null));
+      void run(() => api.update(id, form), "Perfil salvo", () => setEditing(null));
     }
   }
 
@@ -98,7 +96,6 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
         <DialogHeader>
           <DialogTitle className="label">Perfis de acesso</DialogTitle>
         </DialogHeader>
-        {error && <p className="text-xs text-destructive">{error}</p>}
 
         {editing === null ? (
           <>
@@ -122,7 +119,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                         variant="outline" size="sm"
                         type="button"
                         disabled={busy}
-                        onClick={() => void run(() => api.remove(profile.id), () => setConfirmDelete(null))}
+                        onClick={() => void run(() => api.remove(profile.id), "Perfil excluído", () => setConfirmDelete(null))}
                       >
                         Confirmar exclusão
                       </Button>
@@ -137,7 +134,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                           variant="outline" size="sm"
                           type="button"
                           disabled={busy}
-                          onClick={() => void run(() => api.activate(profile.id))}
+                          onClick={() => void run(() => api.activate(profile.id), `Perfil ativo: ${profile.name}`)}
                         >
                           Usar
                         </Button>

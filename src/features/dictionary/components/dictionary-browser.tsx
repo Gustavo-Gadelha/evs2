@@ -7,6 +7,7 @@ import { normalize } from "../search";
 import type { DictionaryEntry } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const MAX_ROWS = 300;
 
@@ -66,8 +67,14 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
   const [columnQuery, setColumnQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // O erro também controla o "Carregando…"; o aviso usa id fixo para não repetir.
+  function fail(err: unknown) {
+    setError(messageOf(err));
+    toast.error("Dicionário indisponível", { id: "dictionary", description: messageOf(err) });
+  }
+
   useEffect(() => {
-    loadTables().then(setTables, (err) => setError(messageOf(err)));
+    loadTables().then(setTables, fail);
   }, []);
 
   function select(name: string) {
@@ -76,7 +83,7 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
     setColumnQuery("");
     loadColumns(name).then(
       (entries) => setColumns((current) => (current === null ? entries : current)),
-      (err) => setError(messageOf(err)),
+      fail,
     );
   }
 
@@ -90,7 +97,6 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
           <DialogTitle className="label">Dicionário do Sankhya</DialogTitle>
           {tables && <span className="text-xs text-muted-foreground">{tables.length} tabelas</span>}
         </DialogHeader>
-        {error && <p className="text-xs text-destructive">{error}</p>}
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
           <section className="flex min-h-0 flex-col gap-2">
             <Input

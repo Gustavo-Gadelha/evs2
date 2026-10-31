@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 // Cada resultado ganha uma tabela nova, sem herdar filtros e ordenação do anterior.
 const tableKeys = new WeakMap<QueryResult, number>();
@@ -32,7 +33,6 @@ type Props = { result: QueryResult | null; error: string | null };
 
 export function ResultView({ result, error }: Props) {
   const [view, setView] = useState<"table" | "json">("table");
-  const [copied, setCopied] = useState(false);
   const json = useMemo(() => (result && view === "json" ? JSON.stringify(result.raw, null, 2) : ""), [result, view]);
 
   if (error) {
@@ -61,10 +61,9 @@ export function ResultView({ result, error }: Props) {
   async function copyCsv() {
     try {
       await navigator.clipboard.writeText(toCsv(result!));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      toast.success("CSV copiado");
     } catch {
-      // Clipboard indisponível.
+      toast.error("Não foi possível copiar");
     }
   }
 
@@ -82,7 +81,7 @@ export function ResultView({ result, error }: Props) {
               </TabsList>
             </Tabs>
             <Button variant="ghost" size="xs" type="button" onClick={copyCsv}>
-              {copied ? "Copiado" : "Copiar CSV"}
+              Copiar CSV
             </Button>
           </div>
         </div>

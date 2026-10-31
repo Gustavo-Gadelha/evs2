@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 type Props = {
   sql: string;
@@ -22,16 +23,14 @@ type Props = {
 
 export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onRegenerate, onRun, onSave }: Props) {
   const [confirming, setConfirming] = useState(false);
-  const [copied, setCopied] = useState(false);
   const check = checkReadOnly(sql);
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(sql);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      toast.success("SQL copiado");
     } catch {
-      // Clipboard indisponível.
+      toast.error("Não foi possível copiar");
     }
   }
 
@@ -73,7 +72,7 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
           <div className="ml-auto flex items-center gap-2">
             <SaveForm label="Salvar consulta" onSave={onSave} />
             <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={copy}>
-              {copied ? "Copiado" : "Copiar"}
+              Copiar
             </Button>
             <Button size="default" type="button" disabled={running || !check.ok} onClick={onRun}>
               {running ? "Rodando…" : "Rodar"}

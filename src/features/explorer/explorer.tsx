@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { api } from "@/lib/api";
 import { history, savedQueries, toDraft, type HistoryEntry, type HistoryItem, type QueryDraft, type SavedQuery } from "@/features/history/history";
@@ -17,10 +18,15 @@ import { Builder } from "@/features/builder/builder";
 import { ResultView } from "@/features/results/result-view";
 import { Sidebar } from "@/features/history/components/sidebar";
 import { SqlEditor } from "@/features/query/components/sql-editor";
-import { Alert } from "@/components/ui/alert";
+import { Toaster } from "@/components/ui/sonner";
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+// Falha de banco de dados (histórico e consultas salvas): id fixo para não empilhar avisos repetidos.
+function notifyStoreError(err: unknown) {
+  toast.warning("Falha ao acessar o banco de dados", { id: "store", description: messageOf(err) });
 }
 
 export function Explorer() {
@@ -32,8 +38,6 @@ export function Explorer() {
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<AuthStatus | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [storeError, setStoreError] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [dictionaryOpen, setDictionaryOpen] = useState(false);
   const [profilesOpen, setProfilesOpen] = useState(false);
@@ -46,9 +50,24 @@ export function Explorer() {
     try {
       setStatus(await api<AuthStatus>("/api/sankhya/status"));
     } catch (err) {
-      setAuthError(messageOf(err));
+      toast.error("Não foi possível ler o status da sessão", { description: messageOf(err) });
     }
   }, []);
+
+  // Sem perfil ativo não há credenciais: o aviso fica até existir um perfil.
+  const noProfile = status !== null && !status.profile;
+  useEffect(() => {
+    if (!noProfile) {
+      toast.dismiss("no-profile");
+      return;
+    }
+    toast.warning("Nenhum perfil ativo", {
+      id: "no-profile",
+      duration: Infinity,
+      description: "Cadastre as credenciais do Sankhya em Perfis.",
+      action: { label: "Abrir Perfis", onClick: () => setProfilesOpen(true) },
+    });
+  }, [noProfile]);
 
   useEffect(() => {
     // Carregado após montar: histórico e consultas salvas vêm das rotas, a de status só existe no navegador.
@@ -58,11 +77,13 @@ export function Explorer() {
         setSaved(imported ?? (await savedQueries.list()));
         setHistoryItems(await history.list());
       } catch (err) {
-        setStoreError(messageOf(err));
+        notifyStoreError(err);
       }
     })();
     void refreshStatus();
-    void profiles.list().then(setProfileState, (err) => setAuthError(messageOf(err)));
+    void profiles.list().then(setProfileState, (err) =>
+      toast.error("Não foi possível carregar os perfis", { description: messageOf(err) }),
+    );
   }, [refreshStatus]);
 
   // Trocar, editar ou excluir perfis muda o ERP: o dicionário e o resultado em tela deixam de valer.
@@ -79,11 +100,10 @@ export function Explorer() {
 
   async function selectProfile(id: string | null) {
     setAuthBusy(true);
-    setAuthError(null);
     try {
       changeProfiles(await profiles.activate(id));
     } catch (err) {
-      setAuthError(messageOf(err));
+      toast.error("Falha ao trocar de perfil", { description: messageOf(err) });
     } finally {
       setAuthBusy(false);
     }
@@ -108,13 +128,13 @@ export function Explorer() {
     setManual(false);
   }
 
-  // Gravar no SQLite nunca derruba a consulta: a falha vira um aviso e a tela segue como está.
+  // Gravar no banco nunca derruba a consulta: a falha vira um aviso e a tela segue como está.
   async function persist<T>(action: Promise<T>, apply: (value: T) => void) {
     try {
       apply(await action);
-      setStoreError(null);
+      toast.dismiss("store");
     } catch (err) {
-      setStoreError(messageOf(err));
+      notifyStoreError(err);
     }
   }
 
@@ -124,7 +144,7 @@ export function Explorer() {
       try {
         entry = await history.get(item.id);
       } catch (err) {
-        setStoreError(messageOf(err));
+        notifyStoreError(err);
       }
     }
     load(entry, entry);
@@ -192,11 +212,10 @@ export function Explorer() {
 
   async function authAction(path: "/api/sankhya/login" | "/api/sankhya/logout") {
     setAuthBusy(true);
-    setAuthError(null);
     try {
       await api(path, { method: "POST" });
     } catch (err) {
-      setAuthError(messageOf(err));
+      toast.error(path.endsWith("/login") ? "Falha no login" : "Falha no logout", { description: messageOf(err) });
     } finally {
       setAuthBusy(false);
       void refreshStatus();
@@ -205,6 +224,7 @@ export function Explorer() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <Toaster theme="dark" position="bottom-right" closeButton />
       <AuthHeader
         status={status}
         profiles={profileState.profiles}
@@ -220,21 +240,6 @@ export function Explorer() {
       {dictionaryOpen && <DictionaryBrowser onClose={() => setDictionaryOpen(false)} />}
       {profilesOpen && (
         <ProfilesDialog state={profileState} onChange={changeProfiles} onClose={() => setProfilesOpen(false)} />
-      )}
-      {status && !status.profile && (
-        <Alert className="rounded-none border-x-0 border-t-0 border-amber-900 bg-amber-950/60 text-amber-200">
-          Nenhum perfil de acesso ativo: abra <strong>Perfis</strong> e cadastre as credenciais do Sankhya.
-        </Alert>
-      )}
-      {authError && (
-        <Alert variant="destructive" className="rounded-none border-x-0 border-t-0 border-destructive/40 bg-destructive/10">
-          {authError}
-        </Alert>
-      )}
-      {storeError && (
-        <Alert className="rounded-none border-x-0 border-t-0 border-amber-900 bg-amber-950/60 text-amber-200">
-          Falha ao acessar o banco local: {storeError}
-        </Alert>
       )}
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
         <Sidebar
