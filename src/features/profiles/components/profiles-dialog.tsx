@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 
 type Props = {
   state: ProfilesState;
@@ -75,9 +75,12 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
   function field(name: keyof ProfileInput, label: string, options: { secret?: boolean; type?: string } = {}) {
     const isNew = editing === "new";
     return (
-      <Label className="flex-col items-stretch gap-1">
-        <span className="label">{label}</span>
+      <Field>
+        <FieldLabel htmlFor={`profile-${name}`} className="label">
+          {label}
+        </FieldLabel>
         <Input
+          id={`profile-${name}`}
           type={options.type ?? (options.secret ? "password" : "text")}
           autoComplete="off"
           required={isNew || !options.secret}
@@ -85,7 +88,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
           value={form[name]}
           onChange={(event) => setForm({ ...form, [name]: event.target.value })}
         />
-      </Label>
+      </Field>
     );
   }
 
@@ -158,23 +161,25 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
             </Button>
           </>
         ) : (
-          <form className="flex flex-col gap-3" onSubmit={submit}>
-            {field("name", "Nome")}
-            {field("baseUrl", "Base URL", { type: "url" })}
-            {field("appkey", "Appkey", { secret: true })}
-            {field("token", "Token", { secret: true })}
-            {field("username", "Usuário")}
-            {field("password", "Senha", { secret: true })}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" type="submit" disabled={busy}>
-                Salvar
-              </Button>
-              {(state.profiles.length > 0 || editing !== "new") && (
-                <Button variant="outline" size="sm" type="button" onClick={() => setEditing(null)}>
-                  Cancelar
+          <form onSubmit={submit}>
+          <FieldGroup className="gap-3">
+              {field("name", "Nome")}
+              {field("baseUrl", "Base URL", { type: "url" })}
+              {field("appkey", "Appkey", { secret: true })}
+              {field("token", "Token", { secret: true })}
+              {field("username", "Usuário")}
+              {field("password", "Senha", { secret: true })}
+              <Field orientation="horizontal">
+                <Button variant="outline" size="sm" type="submit" disabled={busy}>
+                  Salvar
                 </Button>
-              )}
-            </div>
+                {(state.profiles.length > 0 || editing !== "new") && (
+                  <Button variant="outline" size="sm" type="button" onClick={() => setEditing(null)}>
+                    Cancelar
+                  </Button>
+                )}
+              </Field>
+          </FieldGroup>
           </form>
         )}
       </DialogContent>

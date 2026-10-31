@@ -7,6 +7,7 @@ import { SaveForm } from "@/features/history/components/save-form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 type Props = {
   sql: string;
@@ -35,59 +36,61 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
   }
 
   return (
-    <section className="panel flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="label">SQL</span>
-        <Badge
-          className={`h-4 rounded px-1.5 text-[10px] uppercase ${manual ? "bg-amber-500/15 text-amber-300" : "bg-sky-500/15 text-sky-300"}`}
-        >
-          {manual ? "editado à mão" : "gerado pelo builder"}
-        </Badge>
-        {manual &&
-          (confirming ? (
-            <span className="flex items-center gap-1 text-xs text-zinc-300">
-              Descartar a edição?
-              <Button
-                variant="outline" size="sm"
-                type="button"
-                disabled={!canRegenerate}
-                title={canRegenerate ? undefined : "Corrija os problemas do builder primeiro"}
-                onClick={() => {
-                  setConfirming(false);
-                  onRegenerate();
-                }}
-              >
-                Sim, regenerar
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="label">SQL</span>
+          <Badge
+            className={`h-4 rounded px-1.5 text-[10px] uppercase ${manual ? "bg-amber-500/15 text-amber-300" : "bg-sky-500/15 text-sky-300"}`}
+          >
+            {manual ? "editado à mão" : "gerado pelo builder"}
+          </Badge>
+          {manual &&
+            (confirming ? (
+              <span className="flex items-center gap-1 text-xs text-zinc-300">
+                Descartar a edição?
+                <Button
+                  variant="outline" size="sm"
+                  type="button"
+                  disabled={!canRegenerate}
+                  title={canRegenerate ? undefined : "Corrija os problemas do builder primeiro"}
+                  onClick={() => {
+                    setConfirming(false);
+                    onRegenerate();
+                  }}
+                >
+                  Sim, regenerar
+                </Button>
+                <Button variant="ghost" size="xs" type="button" onClick={() => setConfirming(false)}>
+                  Cancelar
+                </Button>
+              </span>
+            ) : (
+              <Button variant="ghost" size="xs" type="button" onClick={() => setConfirming(true)}>
+                ↺ regenerar do builder
               </Button>
-              <Button variant="ghost" size="xs" type="button" onClick={() => setConfirming(false)}>
-                Cancelar
-              </Button>
-            </span>
-          ) : (
-            <Button variant="ghost" size="xs" type="button" onClick={() => setConfirming(true)}>
-              ↺ regenerar do builder
+            ))}
+          <div className="ml-auto flex items-center gap-2">
+            <SaveForm label="Salvar consulta" onSave={onSave} />
+            <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={copy}>
+              {copied ? "Copiado" : "Copiar"}
             </Button>
-          ))}
-        <div className="ml-auto flex items-center gap-2">
-          <SaveForm label="Salvar consulta" onSave={onSave} />
-          <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={copy}>
-            {copied ? "Copiado" : "Copiar"}
-          </Button>
-          <Button size="default" type="button" disabled={running || !check.ok} onClick={onRun}>
-            {running ? "Rodando…" : "Rodar"}
-            <kbd className="ml-2 hidden text-[10px] opacity-70 sm:inline">Ctrl+Enter</kbd>
-          </Button>
+            <Button size="default" type="button" disabled={running || !check.ok} onClick={onRun}>
+              {running ? "Rodando…" : "Rodar"}
+              <kbd className="ml-2 hidden text-[10px] opacity-70 sm:inline">Ctrl+Enter</kbd>
+            </Button>
+          </div>
         </div>
-      </div>
-      <Textarea
-        aria-label="SQL"
-        spellCheck={false}
-        className="min-h-64 resize-y font-mono text-xs leading-relaxed"
-        placeholder="Monte a consulta no builder ou escreva o SQL aqui."
-        value={sql}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      {sql && !check.ok && <p className="text-xs text-amber-300">{check.reason}</p>}
-    </section>
+        <Textarea
+          aria-label="SQL"
+          spellCheck={false}
+          className="min-h-64 resize-y font-mono text-xs leading-relaxed"
+          placeholder="Monte a consulta no builder ou escreva o SQL aqui."
+          value={sql}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        {sql && !check.ok && <p className="text-xs text-amber-300">{check.reason}</p>}
+      </CardContent>
+    </Card>
   );
 }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Cada resultado ganha uma tabela nova, sem herdar filtros e ordenação do anterior.
 const tableKeys = new WeakMap<QueryResult, number>();
@@ -47,9 +48,11 @@ export function ResultView({ result, error }: Props) {
 
   if (!result) {
     return (
-      <section className="panel text-sm text-zinc-500">
-        O resultado aparece aqui. Monte a consulta e pressione Ctrl+Enter.
-      </section>
+      <Card size="sm">
+        <CardContent className="text-muted-foreground">
+          O resultado aparece aqui. Monte a consulta e pressione Ctrl+Enter.
+      </CardContent>
+      </Card>
     );
   }
 
@@ -66,30 +69,32 @@ export function ResultView({ result, error }: Props) {
   }
 
   return (
-    <section className="panel flex min-w-0 flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3 text-xs">
-        <Badge className="bg-emerald-500/15 text-emerald-300">{rows.length} linha(s)</Badge>
-        <span className="text-zinc-400">{result.durationMs} ms</span>
-        <div className="ml-auto flex items-center gap-2">
-          <Tabs value={view} onValueChange={(value) => setView(value as "table" | "json")}>
-            <TabsList>
-              <TabsTrigger value="table">Tabela</TabsTrigger>
-              <TabsTrigger value="json">JSON</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Button variant="ghost" size="xs" type="button" onClick={copyCsv}>
-            {copied ? "Copiado" : "Copiar CSV"}
-          </Button>
+    <Card size="sm" className="min-w-0">
+        <CardContent className="flex min-w-0 flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <Badge className="bg-emerald-500/15 text-emerald-300">{rows.length} linha(s)</Badge>
+          <span className="text-zinc-400">{result.durationMs} ms</span>
+          <div className="ml-auto flex items-center gap-2">
+            <Tabs value={view} onValueChange={(value) => setView(value as "table" | "json")}>
+              <TabsList>
+                <TabsTrigger value="table">Tabela</TabsTrigger>
+                <TabsTrigger value="json">JSON</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button variant="ghost" size="xs" type="button" onClick={copyCsv}>
+              {copied ? "Copiado" : "Copiar CSV"}
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {view === "json" ? (
-        <pre className="max-h-[60vh] overflow-auto rounded border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs leading-relaxed">
-          {json}
-        </pre>
-      ) : (
-        <ResultTable key={tableKey(result)} result={result} />
-      )}
-    </section>
+        {view === "json" ? (
+          <pre className="max-h-[60vh] overflow-auto rounded border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs leading-relaxed">
+            {json}
+          </pre>
+        ) : (
+          <ResultTable key={tableKey(result)} result={result} />
+        )}
+      </CardContent>
+    </Card>
   );
 }
