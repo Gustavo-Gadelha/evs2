@@ -230,6 +230,8 @@ export function Explorer() {
         profiles={profileState.profiles}
         activeId={profileState.activeId}
         busy={authBusy}
+        dictionaryOpen={dictionaryOpen}
+        profilesOpen={profilesOpen}
         onNewQuery={newQuery}
         onOpenDictionary={() => setDictionaryOpen(true)}
         onOpenProfiles={() => setProfilesOpen(true)}

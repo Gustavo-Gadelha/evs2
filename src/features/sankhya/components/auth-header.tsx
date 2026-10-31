@@ -3,12 +3,15 @@ import type { AuthStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Badge } from "@/components/ui/badge";
+import { NavItem } from "@/components/nav-item";
 
 type Props = {
   status: AuthStatus | null;
   profiles: Profile[];
   activeId: string | null;
   busy: boolean;
+  dictionaryOpen: boolean;
+  profilesOpen: boolean;
   onNewQuery: () => void;
   onOpenDictionary: () => void;
   onOpenProfiles: () => void;
@@ -22,6 +25,8 @@ export function AuthHeader({
   profiles,
   activeId,
   busy,
+  dictionaryOpen,
+  profilesOpen,
   onNewQuery,
   onOpenDictionary,
   onOpenProfiles,
@@ -36,6 +41,20 @@ export function AuthHeader({
     <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-card px-4 py-3">
       <h1 className="text-sm font-semibold tracking-tight">snk-assistant</h1>
       <Badge className="h-4 rounded bg-amber-500/15 px-1.5 text-[10px] uppercase text-amber-300">local · dev-only</Badge>
+      <nav aria-label="Principal" className="flex items-center gap-5">
+        <NavItem onClick={onNewQuery}>Nova consulta</NavItem>
+        <NavItem
+          current={dictionaryOpen}
+          aria-haspopup="dialog"
+          aria-expanded={dictionaryOpen}
+          onClick={onOpenDictionary}
+        >
+          Dicionário
+        </NavItem>
+        <NavItem current={profilesOpen} aria-haspopup="dialog" aria-expanded={profilesOpen} onClick={onOpenProfiles}>
+          Perfis
+        </NavItem>
+      </nav>
       <NativeSelect
         size="sm"
         aria-label="Perfil de acesso"
@@ -51,19 +70,9 @@ export function AuthHeader({
           </option>
         ))}
       </NativeSelect>
-      <Button variant="outline" size="sm" type="button" onClick={onOpenProfiles}>
-        Perfis
-      </Button>
       <code className="min-w-0 truncate text-xs text-muted-foreground">
         {status?.baseUrl ?? (status ? "nenhum perfil ativo" : "…")}
       </code>
-
-      <Button variant="outline" size="sm" type="button" onClick={onNewQuery}>
-        Nova consulta
-      </Button>
-      <Button variant="outline" size="sm" type="button" onClick={onOpenDictionary}>
-        Dicionário
-      </Button>
 
       <div className="ml-auto flex items-center gap-3">
         <span className="flex items-center gap-2 text-xs text-foreground">
