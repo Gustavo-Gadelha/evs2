@@ -31,7 +31,10 @@ export function AuthHeader({
   return (
     <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-card px-4 py-3">
       <h1 className="text-sm font-semibold tracking-tight">snk-assistant</h1>
-      <Badge className="h-4 rounded bg-amber-500/15 px-1.5 text-[10px] uppercase text-amber-300">local · dev-only</Badge>
+      <Badge className="h-4 rounded bg-amber-500/15 px-1.5 text-[10px] uppercase text-amber-300">development</Badge>
+      <code className="min-w-0 truncate text-xs text-muted-foreground">
+        {status?.baseUrl ?? (status ? "nenhum perfil ativo" : "…")}
+      </code>
 
       <div className="ml-auto flex flex-wrap items-center gap-3">
         <NativeSelect
@@ -52,9 +55,6 @@ export function AuthHeader({
         <Button variant="outline" size="sm" type="button" aria-haspopup="dialog" onClick={onOpenProfiles}>
           Perfis
         </Button>
-        <code className="min-w-0 truncate text-xs text-muted-foreground">
-          {status?.baseUrl ?? (status ? "nenhum perfil ativo" : "…")}
-        </code>
         <span className="flex items-center gap-2 text-xs text-foreground">
           <span
             aria-hidden
