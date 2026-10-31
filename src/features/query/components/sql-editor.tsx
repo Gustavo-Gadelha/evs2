@@ -28,15 +28,6 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
   const check = checkReadOnly(sql);
   const schema = useSqlSchema(sql);
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(sql);
-      toast.success("SQL copiado");
-    } catch {
-      toast.error("Não foi possível copiar");
-    }
-  }
-
   // Escolha do usuário: o editor não reformata sozinho enquanto se digita.
   function format() {
     const formatted = formatSql(sql);
@@ -86,9 +77,6 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
             <SaveForm label="Salvar consulta" onSave={onSave} />
             <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={format}>
               Formatar
-            </Button>
-            <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={copy}>
-              Copiar
             </Button>
             <Button size="default" type="button" disabled={running || !check.ok} onClick={onRun}>
               {running ? "Rodando…" : "Rodar"}
