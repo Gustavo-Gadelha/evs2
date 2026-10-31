@@ -19,13 +19,9 @@ FROM dependencies AS builder
 
 COPY . .
 
-# `public/` não é versionado quando está vazio, mas o estágio final o copia.
-RUN mkdir -p public && pnpm build
+RUN pnpm build
 
 FROM node:26-alpine AS runner
-
-# Deve acompanhar a versão do `prisma` em pnpm-lock.yaml.
-ARG PRISMA_VERSION=7.10.1
 
 ENV NODE_ENV=production
 ENV PORT=3100
@@ -36,7 +32,8 @@ WORKDIR /app
 # CLI do Prisma isolado (o standalone não o inclui), usado pelo entrypoint para aplicar as migrations.
 WORKDIR /opt/prisma
 
-RUN npm install --no-save --no-audit --no-fund prisma@${PRISMA_VERSION} \
+# Deve acompanhar a versão do `prisma` em pnpm-lock.yaml.
+RUN npm install --no-save --no-audit --no-fund prisma@7.10.1 \
     && chown -R node:node /opt/prisma
 
 COPY --chown=node:node prisma.config.ts ./
