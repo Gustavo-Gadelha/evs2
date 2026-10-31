@@ -24,7 +24,7 @@ function AggEditor({ expr, onChange }: { expr: AggExpr; onChange: (expr: Expr) =
           <option key={fn}>{fn}</option>
         ))}
       </NativeSelect>
-      <Label className="gap-1 text-xs font-normal text-muted-foreground">
+      <Label className="shrink-0 gap-1 text-xs font-normal whitespace-nowrap text-muted-foreground">
         <Checkbox checked={expr.distinct} onCheckedChange={(checked) => onChange({ ...expr, distinct: checked })} />
         DISTINCT
       </Label>
