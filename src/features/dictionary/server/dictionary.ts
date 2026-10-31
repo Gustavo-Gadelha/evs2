@@ -31,6 +31,8 @@ export async function cacheOfActiveProfile(): Promise<Cache> {
   const caches = (store.__dictionary ??= new Map());
   let cache = caches.get(id);
   if (!cache) caches.set(id, (cache = { columns: new Map(), details: new Map() }));
+  // Um cache criado antes de `details` existir (HMR do `pnpm dev`) fica no globalThis sem ele.
+  cache.details ??= new Map();
   return cache;
 }
 
