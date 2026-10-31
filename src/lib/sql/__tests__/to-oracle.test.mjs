@@ -95,15 +95,15 @@ test("problemas: número inválido, BETWEEN sem valor2, IN vazio, join sem ON, H
     having: group("AND", cond("COUNT(*)", ">", "number", "1")),
   });
   assert.equal(sql, "");
-  assert.deepEqual(
-    problems.map((p) => p.section).sort(),
-    ["having", "joins", "where", "where", "where"],
-  );
+  assert.deepEqual(problems.map((p) => p.section).sort(), ["having", "joins", "where", "where", "where"]);
 });
 
 test("limite fetch, com e sem offset", () => {
   const base = { from: { table: "T", alias: "" } };
-  assert.equal(build({ ...base, limit: { rows: 10, offset: 0, style: "fetch" } }).sql, "SELECT *\nFROM T\nFETCH NEXT 10 ROWS ONLY");
+  assert.equal(
+    build({ ...base, limit: { rows: 10, offset: 0, style: "fetch" } }).sql,
+    "SELECT *\nFROM T\nFETCH NEXT 10 ROWS ONLY",
+  );
   assert.equal(
     build({ ...base, limit: { rows: 10, offset: 20, style: "fetch" } }).sql,
     "SELECT *\nFROM T\nOFFSET 20 ROWS\nFETCH NEXT 10 ROWS ONLY",

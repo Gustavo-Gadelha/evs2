@@ -5,7 +5,12 @@ import { useRef } from "react";
 import { ORACLE_FUNCTIONS, applyTemplate } from "@/lib/sql/functions";
 import { Combobox } from "@/components/combobox";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useDictionary } from "@/features/dictionary/components/dictionary-provider";
 
 type Props = {

@@ -21,9 +21,11 @@ const JSON_HEADERS = { method: "POST" } as const;
 
 export const profiles = {
   list: () => api<ProfilesState>("/api/profiles"),
-  create: (input: ProfileInput) => api<ProfilesState>("/api/profiles", { ...JSON_HEADERS, body: JSON.stringify(input) }),
+  create: (input: ProfileInput) =>
+    api<ProfilesState>("/api/profiles", { ...JSON_HEADERS, body: JSON.stringify(input) }),
   update: (id: string, input: ProfileUpdate) =>
     api<ProfilesState>(`/api/profiles/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   remove: (id: string) => api<ProfilesState>(`/api/profiles/${id}`, { method: "DELETE" }),
-  activate: (id: string | null) => api<ProfilesState>("/api/profiles/active", { ...JSON_HEADERS, body: JSON.stringify({ id }) }),
+  activate: (id: string | null) =>
+    api<ProfilesState>("/api/profiles/active", { ...JSON_HEADERS, body: JSON.stringify({ id }) }),
 };

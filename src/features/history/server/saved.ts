@@ -19,7 +19,10 @@ export const GET = localOnly(async () => Response.json(await listSaved()));
 export const POST = localOnly(async (req) => {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json({ error: { type: "InvalidRequest", message: z.prettifyError(parsed.error) } }, { status: 400 });
+    return Response.json(
+      { error: { type: "InvalidRequest", message: z.prettifyError(parsed.error) } },
+      { status: 400 },
+    );
   }
   return Response.json(await addSaved(parsed.data as Parameters<typeof addSaved>[0]));
 });

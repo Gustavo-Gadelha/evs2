@@ -27,7 +27,11 @@ type Props = {
 // O menu de contexto (botão direito) fecha a aba, as outras, as da direita, as da esquerda ou todas.
 export function QueryTabs({ tabs, activeId, onSelect, onClose, onAdd }: Props) {
   return (
-    <div role="tablist" aria-label="Consultas abertas" className="flex items-center gap-1 overflow-x-auto border-b border-border px-4 py-1">
+    <div
+      role="tablist"
+      aria-label="Consultas abertas"
+      className="flex items-center gap-1 overflow-x-auto border-b border-border px-4 py-1"
+    >
       {tabs.map((tab, index) => {
         const active = tab.id === activeId;
         const title = tabTitle(tab);
@@ -47,7 +51,11 @@ export function QueryTabs({ tabs, activeId, onSelect, onClose, onAdd }: Props) {
               >
                 {tab.running && <Loader2Icon className="size-3 shrink-0 animate-spin" />}
                 <span className="truncate">{title}</span>
-                {tab.manual && <span className="shrink-0 text-amber-300" title="editado à mão">•</span>}
+                {tab.manual && (
+                  <span className="shrink-0 text-amber-300" title="editado à mão">
+                    •
+                  </span>
+                )}
               </button>
               <button
                 type="button"
@@ -63,7 +71,10 @@ export function QueryTabs({ tabs, activeId, onSelect, onClose, onAdd }: Props) {
               <ContextMenuItem disabled={tabs.length === 1} onClick={() => onClose(others, tab.id)}>
                 Fechar outras
               </ContextMenuItem>
-              <ContextMenuItem disabled={index === tabs.length - 1} onClick={() => onClose(tabs.slice(index + 1).map(idOf), tab.id)}>
+              <ContextMenuItem
+                disabled={index === tabs.length - 1}
+                onClick={() => onClose(tabs.slice(index + 1).map(idOf), tab.id)}
+              >
                 Fechar à direita
               </ContextMenuItem>
               <ContextMenuItem disabled={index === 0} onClick={() => onClose(tabs.slice(0, index).map(idOf), tab.id)}>

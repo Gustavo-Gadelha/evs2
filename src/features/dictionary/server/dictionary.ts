@@ -47,7 +47,9 @@ async function entries(sql: string): Promise<DictionaryEntry[]> {
   if (!check.ok) throw new Error(check.reason);
 
   const { rows } = await executeQuery(sql);
-  return rows.map((row) => ({ name: String(row[0] ?? ""), description: String(row[1] ?? "") })).filter((entry) => entry.name);
+  return rows
+    .map((row) => ({ name: String(row[0] ?? ""), description: String(row[1] ?? "") }))
+    .filter((entry) => entry.name);
 }
 
 export async function listTables(): Promise<DictionaryEntry[]> {

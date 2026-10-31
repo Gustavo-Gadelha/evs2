@@ -50,7 +50,10 @@ export function cellText(value: unknown): string {
 
 // Busca sem diferenciar maiúsculas nem acentos: "sao" encontra "São".
 function normalize(text: string): string {
-  return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  return text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
 }
 
 const includesText: FilterFn<typeof features, ResultRow> = Object.assign(
@@ -140,7 +143,11 @@ export function ResultTable({ result }: { result: QueryResult }) {
   const hasFilters = Boolean(table.state.globalFilter) || table.state.columnFilters.length > 0;
 
   return (
-    <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col gap-2 bg-background p-4" : "flex min-w-0 flex-col gap-2"}>
+    <div
+      className={
+        fullscreen ? "fixed inset-0 z-50 flex flex-col gap-2 bg-background p-4" : "flex min-w-0 flex-col gap-2"
+      }
+    >
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <Input
           aria-label="Buscar em todas as colunas"
@@ -151,7 +158,8 @@ export function ResultTable({ result }: { result: QueryResult }) {
         />
         {hasFilters && (
           <Button
-            variant="ghost" size="xs"
+            variant="ghost"
+            size="xs"
             type="button"
             onClick={() => {
               table.setGlobalFilter("");
@@ -167,30 +175,36 @@ export function ResultTable({ result }: { result: QueryResult }) {
           </span>
         )}
         <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="xs" type="button" aria-pressed={fullscreen} onClick={() => setFullscreen((value) => !value)}>
-          {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="xs" type="button" />}>
-            Colunas ({visibleColumns.length}/{result.columns.length})
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="max-h-72 w-60">
-            <DropdownMenuItem closeOnClick={false} onClick={() => table.toggleAllColumnsVisible(true)}>
-              mostrar todas
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {table.getAllLeafColumns().map((column) => (
-              <DropdownMenuCheckboxItem
-                key={column.id}
-                className="font-mono text-xs"
-                checked={column.getIsVisible()}
-                onCheckedChange={(checked) => column.toggleVisibility(checked)}
-              >
-                <span className="truncate">{result.columns[Number(column.id.slice(1))]}</span>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="xs"
+            type="button"
+            aria-pressed={fullscreen}
+            onClick={() => setFullscreen((value) => !value)}
+          >
+            {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="xs" type="button" />}>
+              Colunas ({visibleColumns.length}/{result.columns.length})
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-72 w-60">
+              <DropdownMenuItem closeOnClick={false} onClick={() => table.toggleAllColumnsVisible(true)}>
+                mostrar todas
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {table.getAllLeafColumns().map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  className="font-mono text-xs"
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(checked) => column.toggleVisibility(checked)}
+                >
+                  <span className="truncate">{result.columns[Number(column.id.slice(1))]}</span>
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -202,7 +216,10 @@ export function ResultTable({ result }: { result: QueryResult }) {
           <thead className="sticky top-0 z-10 grid bg-card">
             {table.getHeaderGroups().map((group) => (
               <tr key={group.id} className="flex">
-                <th className="shrink-0 border-b border-border px-2 py-1.5 text-right text-muted-foreground" style={{ width: numberWidth }}>
+                <th
+                  className="shrink-0 border-b border-border px-2 py-1.5 text-right text-muted-foreground"
+                  style={{ width: numberWidth }}
+                >
                   #
                 </th>
                 {group.headers.map((header) => {
@@ -233,7 +250,11 @@ export function ResultTable({ result }: { result: QueryResult }) {
             <tr className="flex">
               <th className="shrink-0 border-b border-border" style={{ width: numberWidth }} />
               {visibleColumns.map((column) => (
-                <th key={column.id} className="shrink-0 border-b border-border p-1" style={{ width: widthOf(column.id) }}>
+                <th
+                  key={column.id}
+                  className="shrink-0 border-b border-border p-1"
+                  style={{ width: widthOf(column.id) }}
+                >
                   <Input
                     aria-label={`Filtrar ${result.columns[Number(column.id.slice(1))]}`}
                     className="h-6 w-full px-1.5 py-0.5 text-xs font-normal md:text-xs"
@@ -254,7 +275,10 @@ export function ResultTable({ result }: { result: QueryResult }) {
                   className={`absolute flex w-full hover:bg-accent/60 ${item.index % 2 ? "" : "bg-muted/40"}`}
                   style={{ height: ROW_HEIGHT, transform: `translateY(${item.start}px)` }}
                 >
-                  <td className="shrink-0 px-2 text-right leading-7 text-muted-foreground" style={{ width: numberWidth }}>
+                  <td
+                    className="shrink-0 px-2 text-right leading-7 text-muted-foreground"
+                    style={{ width: numberWidth }}
+                  >
                     {item.index + 1}
                   </td>
                   {row.getVisibleCells().map((cell) => {

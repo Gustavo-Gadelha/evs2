@@ -57,7 +57,9 @@ export function AuthHeader({
             disabled={busy || profiles.length === 0}
           >
             <UserRoundIcon className="text-primary" aria-hidden />
-            <span className="truncate font-semibold">{activeProfile?.name ?? (profiles.length === 0 ? "Sem perfis" : "Selecione")}</span>
+            <span className="truncate font-semibold">
+              {activeProfile?.name ?? (profiles.length === 0 ? "Sem perfis" : "Selecione")}
+            </span>
             <ChevronDownIcon className="text-muted-foreground" aria-hidden />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="max-h-72 w-56">

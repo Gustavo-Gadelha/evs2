@@ -55,7 +55,12 @@ export function FromClause({ state, onChange }: Props) {
 }
 
 function newJoin(): Join {
-  return { type: "LEFT", table: "", alias: "", on: { op: "AND", items: [{ left: "", op: "=", right: { kind: "expr", value: "" } }] } };
+  return {
+    type: "LEFT",
+    table: "",
+    alias: "",
+    on: { op: "AND", items: [{ left: "", op: "=", right: { kind: "expr", value: "" } }] },
+  };
 }
 
 export function JoinsClause({ state, onChange }: Props) {

@@ -16,7 +16,10 @@ type Props = {
 
 export function Section({ title, problems, off = 0, omitted = false, onToggleOmit, children }: Props) {
   return (
-    <details open className={`rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 ${omitted ? "opacity-60" : ""}`}>
+    <details
+      open
+      className={`rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 ${omitted ? "opacity-60" : ""}`}
+    >
       <summary className="flex cursor-pointer select-none items-center gap-2 px-3 py-2">
         <span className="label">{title}</span>
         {off > 0 && (

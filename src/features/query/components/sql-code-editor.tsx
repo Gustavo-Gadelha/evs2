@@ -38,7 +38,12 @@ export function SqlCodeEditor({ value, schema, placeholder, onChange }: Props) {
       value={value}
       placeholder={placeholder}
       extensions={extensions}
-      basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: false, highlightActiveLineGutter: false }}
+      basicSetup={{
+        lineNumbers: false,
+        foldGutter: false,
+        highlightActiveLine: false,
+        highlightActiveLineGutter: false,
+      }}
       onChange={onChange}
     />
   );

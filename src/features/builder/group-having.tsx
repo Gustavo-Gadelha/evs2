@@ -35,7 +35,9 @@ export function GroupByClause({ state, onChange }: Props) {
               name="group-by-mode"
               checked={mode === option}
               // Ao passar para manual, começa pelo que o automático geraria.
-              onChange={() => setGroupBy(option === "manual" && exprs.length === 0 ? { mode: option, exprs: auto } : { mode: option })}
+              onChange={() =>
+                setGroupBy(option === "manual" && exprs.length === 0 ? { mode: option, exprs: auto } : { mode: option })
+              }
             />
             {option === "auto" ? "automático" : "manual"}
           </label>
@@ -71,7 +73,8 @@ export function GroupByClause({ state, onChange }: Props) {
             )}
           </SortableList>
           <Button
-            variant="ghost" size="xs"
+            variant="ghost"
+            size="xs"
             type="button"
             className="self-start"
             onClick={() => setExprs([...exprs, ""], [...ids.current, crypto.randomUUID()])}

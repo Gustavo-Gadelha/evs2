@@ -12,7 +12,10 @@ const bodySchema = z.object({ sql: z.string().trim().min(1).max(100_000) });
 export const POST = localOnly(async (req) => {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json({ error: { type: "InvalidRequest", message: z.prettifyError(parsed.error) } }, { status: 400 });
+    return Response.json(
+      { error: { type: "InvalidRequest", message: z.prettifyError(parsed.error) } },
+      { status: 400 },
+    );
   }
 
   const { sql } = parsed.data;

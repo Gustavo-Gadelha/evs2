@@ -43,32 +43,37 @@ export function Builder({ state, problems, onChange }: Props) {
 
   return (
     <Dictionary state={state}>
-    <div className="flex flex-col gap-2">
-      <Section title="FROM" problems={of("from")}>
-        <FromClause state={state} onChange={patch} />
-      </Section>
-      <Section title={`JOINS (${state.joins.length})`} problems={of("joins")} off={countOff(state.joins)} {...omit("joins")}>
-        <JoinsClause state={state} onChange={patch} />
-      </Section>
-      <Section title="SELECT" problems={of("select")} off={countOff(state.select)} {...omit("select")}>
-        <SelectClause state={state} onChange={patch} />
-      </Section>
-      <Section title="WHERE" problems={of("where")} off={countGroupOff(state.where)} {...omit("where")}>
-        <CondGroupEditor group={state.where} onChange={(where) => patch({ where })} />
-      </Section>
-      <Section title="GROUP BY" problems={of("groupBy")} {...omit("groupBy")}>
-        <GroupByClause state={state} onChange={patch} />
-      </Section>
-      <Section title="HAVING" problems={of("having")} off={countGroupOff(state.having)} {...omit("having")}>
-        <HavingClause state={state} onChange={patch} />
-      </Section>
-      <Section title="ORDER BY" problems={of("orderBy")} off={countOff(state.orderBy)} {...omit("orderBy")}>
-        <OrderByClause state={state} onChange={patch} />
-      </Section>
-      <Section title="LIMITE" problems={of("limit")} {...omit("limit")}>
-        <LimitClause state={state} onChange={patch} />
-      </Section>
-    </div>
+      <div className="flex flex-col gap-2">
+        <Section title="FROM" problems={of("from")}>
+          <FromClause state={state} onChange={patch} />
+        </Section>
+        <Section
+          title={`JOINS (${state.joins.length})`}
+          problems={of("joins")}
+          off={countOff(state.joins)}
+          {...omit("joins")}
+        >
+          <JoinsClause state={state} onChange={patch} />
+        </Section>
+        <Section title="SELECT" problems={of("select")} off={countOff(state.select)} {...omit("select")}>
+          <SelectClause state={state} onChange={patch} />
+        </Section>
+        <Section title="WHERE" problems={of("where")} off={countGroupOff(state.where)} {...omit("where")}>
+          <CondGroupEditor group={state.where} onChange={(where) => patch({ where })} />
+        </Section>
+        <Section title="GROUP BY" problems={of("groupBy")} {...omit("groupBy")}>
+          <GroupByClause state={state} onChange={patch} />
+        </Section>
+        <Section title="HAVING" problems={of("having")} off={countGroupOff(state.having)} {...omit("having")}>
+          <HavingClause state={state} onChange={patch} />
+        </Section>
+        <Section title="ORDER BY" problems={of("orderBy")} off={countOff(state.orderBy)} {...omit("orderBy")}>
+          <OrderByClause state={state} onChange={patch} />
+        </Section>
+        <Section title="LIMITE" problems={of("limit")} {...omit("limit")}>
+          <LimitClause state={state} onChange={patch} />
+        </Section>
+      </div>
     </Dictionary>
   );
 }

@@ -63,10 +63,18 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (editing === "new") {
-      void run(() => api.create(form), "Perfil salvo", () => setEditing(null));
+      void run(
+        () => api.create(form),
+        "Perfil salvo",
+        () => setEditing(null),
+      );
     } else if (editing) {
       const id = editing;
-      void run(() => api.update(id, form), "Perfil salvo", () => setEditing(null));
+      void run(
+        () => api.update(id, form),
+        "Perfil salvo",
+        () => setEditing(null),
+      );
     }
   }
 
@@ -106,7 +114,9 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                     <div className="flex items-center gap-2 text-sm">
                       {profile.name}
                       {profile.id === state.activeId && (
-                        <Badge className="h-4 rounded bg-emerald-500/15 px-1.5 text-[10px] uppercase text-emerald-300">ativo</Badge>
+                        <Badge className="h-4 rounded bg-emerald-500/15 px-1.5 text-[10px] uppercase text-emerald-300">
+                          ativo
+                        </Badge>
                       )}
                     </div>
                     <div className="truncate text-xs text-muted-foreground">
@@ -116,10 +126,17 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                   {confirmDelete === profile.id ? (
                     <>
                       <Button
-                        variant="outline" size="sm"
+                        variant="outline"
+                        size="sm"
                         type="button"
                         disabled={busy}
-                        onClick={() => void run(() => api.remove(profile.id), "Perfil excluído", () => setConfirmDelete(null))}
+                        onClick={() =>
+                          void run(
+                            () => api.remove(profile.id),
+                            "Perfil excluído",
+                            () => setConfirmDelete(null),
+                          )
+                        }
                       >
                         Confirmar exclusão
                       </Button>
@@ -131,7 +148,8 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                     <>
                       {profile.id !== state.activeId && (
                         <Button
-                          variant="outline" size="sm"
+                          variant="outline"
+                          size="sm"
                           type="button"
                           disabled={busy}
                           onClick={() => void run(() => api.activate(profile.id), `Perfil ativo: ${profile.name}`)}
@@ -159,7 +177,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
           </>
         ) : (
           <form onSubmit={submit}>
-          <FieldGroup className="gap-3">
+            <FieldGroup className="gap-3">
               {field("name", "Nome")}
               {field("baseUrl", "Base URL", { type: "url" })}
               {field("appkey", "Appkey", { secret: true })}
@@ -176,7 +194,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                   </Button>
                 )}
               </Field>
-          </FieldGroup>
+            </FieldGroup>
           </form>
         )}
       </DialogContent>

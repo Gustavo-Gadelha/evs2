@@ -17,9 +17,7 @@ const text = (value: unknown) => String(value ?? "");
 
 async function readColumns(name: string): Promise<ColumnInfo[]> {
   const [columns, options] = await Promise.all([
-    rows(
-      `SELECT NOMECAMPO, DESCRCAMPO, TIPCAMPO, TAMANHO FROM TDDCAM WHERE NOMETAB = '${name}' ORDER BY NOMECAMPO`,
-    ),
+    rows(`SELECT NOMECAMPO, DESCRCAMPO, TIPCAMPO, TAMANHO FROM TDDCAM WHERE NOMETAB = '${name}' ORDER BY NOMECAMPO`),
     rows(
       `SELECT C.NOMECAMPO, O.VALOR, O.OPCAO FROM TDDOPC O JOIN TDDCAM C ON C.NUCAMPO = O.NUCAMPO ` +
         `WHERE C.NOMETAB = '${name}' ORDER BY C.NOMECAMPO, O.ORDEM, O.VALOR`,

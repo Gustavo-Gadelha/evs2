@@ -9,10 +9,7 @@ const base = (from) => ({ ...emptyQueryState(), limit: null, from });
 
 test("adiciona o JOIN com o prefixo do alias do FROM", () => {
   const next = addRelationJoin(base({ table: "TGFCAB", alias: "cab" }), "TGFCAB", relation);
-  assert.equal(
-    toOracleSql(next).sql,
-    "SELECT *\nFROM TGFCAB CAB\n  INNER JOIN TGFPAR ON CAB.CODPARC = TGFPAR.CODPARC",
-  );
+  assert.equal(toOracleSql(next).sql, "SELECT *\nFROM TGFCAB CAB\n  INNER JOIN TGFPAR ON CAB.CODPARC = TGFPAR.CODPARC");
 });
 
 test("sem alias, usa o nome da tabela como prefixo", () => {
@@ -34,7 +31,13 @@ test("tabela já presente ganha alias numerado", () => {
 });
 
 test("aceita OWNER.TABELA e vários pares de colunas", () => {
-  const pair = { table: "TGFITE", pairs: [{ column: "NUNOTA", otherColumn: "NUNOTA" }, { column: "A", otherColumn: "B" }] };
+  const pair = {
+    table: "TGFITE",
+    pairs: [
+      { column: "NUNOTA", otherColumn: "NUNOTA" },
+      { column: "A", otherColumn: "B" },
+    ],
+  };
   const next = addRelationJoin(base({ table: "SANKHYA.TGFCAB", alias: "c" }), "TGFCAB", pair);
   assert.equal(next.joins[0].on.items.length, 2);
   assert.equal(next.joins[0].on.items[1].left, "C.A");

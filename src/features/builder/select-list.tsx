@@ -54,7 +54,10 @@ export function SelectClause({ state, onChange }: Props) {
         omittable
         add={[
           { label: "+ coluna", make: (): SelectItem => ({ expr: { kind: "raw", sql: "" } }) },
-          { label: "+ agregação", make: (): SelectItem => ({ expr: { kind: "agg", fn: "COUNT", arg: "", distinct: false } }) },
+          {
+            label: "+ agregação",
+            make: (): SelectItem => ({ expr: { kind: "agg", fn: "COUNT", arg: "", distinct: false } }),
+          },
         ]}
         renderRow={(item, _, update) => (
           <>

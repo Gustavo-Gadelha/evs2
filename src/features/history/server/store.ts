@@ -49,7 +49,9 @@ export async function listHistory(): Promise<HistoryItem[]> {
     omit: { result: true },
   });
   const withResult = new Set(
-    (await db().historyEntry.findMany({ where: { result: { not: Prisma.DbNull } }, select: { id: true } })).map((row) => row.id),
+    (await db().historyEntry.findMany({ where: { result: { not: Prisma.DbNull } }, select: { id: true } })).map(
+      (row) => row.id,
+    ),
   );
   return rows.map((row) => toItem(row, withResult.has(row.id)));
 }

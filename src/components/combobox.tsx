@@ -20,7 +20,16 @@ type Props = {
 
 // Campo de texto com sugestões do dicionário. No lugar do <datalist> nativo, que renderiza todas as
 // correspondências: aqui só o menu aberto existe, e com poucos itens.
-export function Combobox({ label, value, onChange, getItems, placeholder, className = "", inputClassName = "", inputRef }: Props) {
+export function Combobox({
+  label,
+  value,
+  onChange,
+  getItems,
+  placeholder,
+  className = "",
+  inputClassName = "",
+  inputRef,
+}: Props) {
   const query = useDeferredValue(value);
   const items = getItems(query);
   const { isOpen, getInputProps, getMenuProps, getItemProps, highlightedIndex } = useCombobox<DictionaryEntry>({

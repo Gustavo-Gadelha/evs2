@@ -2,12 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import {
-  createProfile,
-  DuplicateProfileError,
-  listProfiles,
-  ProfileNotFoundError,
-} from "./store";
+import { createProfile, DuplicateProfileError, listProfiles, ProfileNotFoundError } from "./store";
 import { localOnly } from "@/features/sankhya/server/local-only";
 
 const text = z.string().trim().min(1).max(500);
@@ -56,4 +51,3 @@ export const POST = localOnly(async (req) =>
     return Response.json(await listProfiles());
   }),
 );
-

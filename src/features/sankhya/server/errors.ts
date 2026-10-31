@@ -21,10 +21,7 @@ export class SankhyaError extends Error {
 export class SankhyaClientError extends SankhyaError {
   readonly response?: UpstreamResponse;
 
-  constructor(
-    message = "O Sankhya rejeitou a requisição.",
-    options?: ErrorOptions & { response?: UpstreamResponse },
-  ) {
+  constructor(message = "O Sankhya rejeitou a requisição.", options?: ErrorOptions & { response?: UpstreamResponse }) {
     super(message, options);
     this.response = options?.response;
   }

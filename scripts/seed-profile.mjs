@@ -61,7 +61,10 @@ if (key.length !== 32) fail("ENCRYPTION_KEY deve ter 32 bytes em base64 (ver .en
 // Formato: base64(iv[12] | tag[16] | texto cifrado), AES-256-GCM.
 const iv = randomBytes(12);
 const cipher = createCipheriv("aes-256-gcm", key, iv);
-const data = Buffer.concat([cipher.update(JSON.stringify({ appkey, token, username, password }), "utf8"), cipher.final()]);
+const data = Buffer.concat([
+  cipher.update(JSON.stringify({ appkey, token, username, password }), "utf8"),
+  cipher.final(),
+]);
 const secret = Buffer.concat([iv, cipher.getAuthTag(), data]).toString("base64");
 
 const client = new pg.Client({ connectionString: databaseUrl });
@@ -84,10 +87,16 @@ try {
      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
     [id],
   );
-  console.log(`seed: perfil "${name}" ${created ? "criado" : "atualizado"}${active.rowCount ? " e definido como ativo" : ""}.`);
+  console.log(
+    `seed: perfil "${name}" ${created ? "criado" : "atualizado"}${active.rowCount ? " e definido como ativo" : ""}.`,
+  );
   console.log("seed: se o app já estiver rodando, reinicie-o para ele recarregar os perfis.");
 } catch (err) {
-  fail(err.code === "42P01" ? "tabelas não encontradas; suba o app uma vez para aplicar as migrations." : (err.message ?? String(err)));
+  fail(
+    err.code === "42P01"
+      ? "tabelas não encontradas; suba o app uma vez para aplicar as migrations."
+      : (err.message ?? String(err)),
+  );
 } finally {
   await client.end().catch(() => {});
 }

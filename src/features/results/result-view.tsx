@@ -51,7 +51,7 @@ export function ResultView({ result, error }: Props) {
       <Card size="sm">
         <CardContent className="text-muted-foreground">
           O resultado aparece aqui. Monte a consulta e pressione Ctrl+Enter.
-      </CardContent>
+        </CardContent>
       </Card>
     );
   }
@@ -69,7 +69,7 @@ export function ResultView({ result, error }: Props) {
 
   return (
     <Card size="sm" className="min-w-0">
-        <CardContent className="flex min-w-0 flex-col gap-3">
+      <CardContent className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <Badge className="bg-emerald-500/15 text-emerald-300">{rows.length} linha(s)</Badge>
           <span className="text-muted-foreground">{result.durationMs} ms</span>

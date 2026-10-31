@@ -94,8 +94,18 @@ export function TableDetailPanel({
   return (
     <>
       <div className="flex items-center gap-2">
-        <Input placeholder={`Buscar coluna em ${table}`} value={query} onChange={(event) => setQuery(event.target.value)} />
-        <Button variant="outline" size="sm" type="button" title="Monta um SELECT com 20 linhas no builder" onClick={onPreview}>
+        <Input
+          placeholder={`Buscar coluna em ${table}`}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          title="Monta um SELECT com 20 linhas no builder"
+          onClick={onPreview}
+        >
           <TableIcon data-icon="inline-start" />
           Ver 20 linhas
         </Button>

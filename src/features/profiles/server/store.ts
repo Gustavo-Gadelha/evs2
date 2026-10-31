@@ -77,7 +77,12 @@ export async function createProfile(input: ProfileInput): Promise<void> {
     });
     // O primeiro perfil cadastrado já fica ativo.
     const hasActive = (await load()).activeId !== null;
-    if (!hasActive) await db().appSetting.upsert({ where: { key: ACTIVE_KEY }, create: { key: ACTIVE_KEY, value: profile.id }, update: { value: profile.id } });
+    if (!hasActive)
+      await db().appSetting.upsert({
+        where: { key: ACTIVE_KEY },
+        create: { key: ACTIVE_KEY, value: profile.id },
+        update: { value: profile.id },
+      });
   } catch (err) {
     if (isUniqueViolation(err)) throw new DuplicateProfileError(`Já existe um perfil chamado "${input.name}".`);
     throw err;
@@ -120,7 +125,11 @@ export async function setActiveProfile(id: string | null): Promise<void> {
     await db().appSetting.deleteMany({ where: { key: ACTIVE_KEY } });
   } else {
     if (!(await getProfile(id))) throw new ProfileNotFoundError("Perfil não encontrado.");
-    await db().appSetting.upsert({ where: { key: ACTIVE_KEY }, create: { key: ACTIVE_KEY, value: id }, update: { value: id } });
+    await db().appSetting.upsert({
+      where: { key: ACTIVE_KEY },
+      create: { key: ACTIVE_KEY, value: id },
+      update: { value: id },
+    });
   }
   await reload();
 }

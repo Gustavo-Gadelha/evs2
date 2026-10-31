@@ -7,6 +7,8 @@
     "build": "prisma generate && next build",
     "seed": "node scripts/seed-profile.mjs",
     "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test:sql": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"src/lib/sql/__tests__/*.test.mjs\"",
     "typecheck": "next typegen && tsc --noEmit"
   },
@@ -41,6 +43,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "prettier": "^3.9.10",
     "prisma": "^7.10.1",
     "tailwindcss": "^4",
     "typescript": "^5"

@@ -4,7 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
-import { history, savedQueries, toDraft, type HistoryEntry, type HistoryItem, type QueryDraft, type SavedQuery } from "@/features/history/history";
+import {
+  history,
+  savedQueries,
+  toDraft,
+  type HistoryEntry,
+  type HistoryItem,
+  type QueryDraft,
+  type SavedQuery,
+} from "@/features/history/history";
 import { emptyQueryState, type QueryState } from "@/lib/sql/query-state";
 import { QueryTabs } from "./query-tabs";
 import { isBlank, newTab, type Tab } from "./tabs";
@@ -118,9 +126,11 @@ export function Explorer() {
       }
     })();
     void refreshStatus();
-    void profiles.list().then(setProfileState, (err) =>
-      toast.error("Não foi possível carregar os perfis", { description: messageOf(err) }),
-    );
+    void profiles
+      .list()
+      .then(setProfileState, (err) =>
+        toast.error("Não foi possível carregar os perfis", { description: messageOf(err) }),
+      );
   }, [refreshStatus]);
 
   // Trocar, editar ou excluir perfis muda o ERP: o dicionário e o resultado em tela deixam de valer.
@@ -298,13 +308,7 @@ export function Explorer() {
       {profilesOpen && (
         <ProfilesDialog state={profileState} onChange={changeProfiles} onClose={() => setProfilesOpen(false)} />
       )}
-      <QueryTabs
-        tabs={tabs}
-        activeId={active.id}
-        onSelect={setActiveId}
-        onClose={closeTabs}
-        onAdd={() => addTab()}
-      />
+      <QueryTabs tabs={tabs} activeId={active.id} onSelect={setActiveId} onClose={closeTabs} onAdd={() => addTab()} />
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
         <Sidebar
           history={historyItems}
@@ -319,7 +323,12 @@ export function Explorer() {
           onOpenDictionary={() => setDictionaryOpen(true)}
         />
         <main className="flex min-w-0 flex-col gap-3 p-4">
-          <Builder key={`${active.id}-${status?.profile?.id ?? "none"}`} state={queryState} problems={generated.problems} onChange={changeState} />
+          <Builder
+            key={`${active.id}-${status?.profile?.id ?? "none"}`}
+            state={queryState}
+            problems={generated.problems}
+            onChange={changeState}
+          />
         </main>
         <div className="flex min-w-0 flex-col gap-4 p-4 lg:col-start-2 xl:col-start-auto">
           <SqlEditor

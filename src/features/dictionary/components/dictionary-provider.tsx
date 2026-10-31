@@ -59,7 +59,10 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
     const pairs = usedKey ? usedKey.split(",").map((pair) => pair.split("=")) : [];
     Promise.all(
       pairs.map(async ([prefix, table]) =>
-        (await loadColumns(table)).map((column) => ({ name: `${prefix}.${column.name}`, description: column.description })),
+        (await loadColumns(table)).map((column) => ({
+          name: `${prefix}.${column.name}`,
+          description: column.description,
+        })),
       ),
     ).then(
       (options) => {
@@ -81,9 +84,5 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
     return { tables: (query) => search(tableIndex, query), columns: (query) => search(columnIndex, query) };
   }, [tables, columns]);
 
-  return (
-    <DictionaryContext value={api}>
-      {children}
-    </DictionaryContext>
-  );
+  return <DictionaryContext value={api}>{children}</DictionaryContext>;
 }

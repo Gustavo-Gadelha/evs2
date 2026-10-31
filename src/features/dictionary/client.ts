@@ -30,9 +30,15 @@ export function resetDictionary(): void {
 export function refreshDictionary(): Promise<DictionaryEntry[]> {
   columns.clear();
   details.clear();
-  const pending = remember(api<DictionaryEntry[]>("/api/sankhya/dictionary/refresh", { method: "POST" }), () => (tables = null));
+  const pending = remember(
+    api<DictionaryEntry[]>("/api/sankhya/dictionary/refresh", { method: "POST" }),
+    () => (tables = null),
+  );
   tables = pending;
-  pending.then(() => listeners.forEach((listener) => listener()), () => {});
+  pending.then(
+    () => listeners.forEach((listener) => listener()),
+    () => {},
+  );
   return pending;
 }
 
@@ -58,9 +64,8 @@ export function loadTableDetail(table: string): Promise<TableDetail> {
   const name = table.trim().toUpperCase().split(".").pop() ?? "";
   let pending = details.get(name);
   if (!pending) {
-    pending = remember(
-      api<TableDetail>(`/api/sankhya/dictionary/table?table=${encodeURIComponent(name)}`),
-      () => details.delete(name),
+    pending = remember(api<TableDetail>(`/api/sankhya/dictionary/table?table=${encodeURIComponent(name)}`), () =>
+      details.delete(name),
     );
     details.set(name, pending);
   }

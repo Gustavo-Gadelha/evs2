@@ -53,7 +53,8 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
               <span className="flex items-center gap-1 text-xs text-foreground">
                 Descartar a edição?
                 <Button
-                  variant="outline" size="sm"
+                  variant="outline"
+                  size="sm"
                   type="button"
                   disabled={!canRegenerate}
                   title={canRegenerate ? undefined : "Corrija os problemas do builder primeiro"}

@@ -225,7 +225,8 @@ function GroupBody({ group, onChange, depth = 0, onRemove, onToggleOff, rootId, 
         </Button>
         {depth < MAX_DEPTH && (
           <Button
-            variant="ghost" size="xs"
+            variant="ghost"
+            size="xs"
             type="button"
             onClick={() => setItems([...group.items, emptyGroup(group.op === "AND" ? "OR" : "AND")])}
           >
@@ -233,12 +234,24 @@ function GroupBody({ group, onChange, depth = 0, onRemove, onToggleOff, rootId, 
           </Button>
         )}
         {onToggleOff && (
-          <Button variant="ghost" size="xs" type="button" className={`ml-auto ${group.off ? "text-amber-300" : ""}`} onClick={onToggleOff}>
+          <Button
+            variant="ghost"
+            size="xs"
+            type="button"
+            className={`ml-auto ${group.off ? "text-amber-300" : ""}`}
+            onClick={onToggleOff}
+          >
             {group.off ? "incluir grupo" : "omitir grupo"}
           </Button>
         )}
         {onRemove && (
-          <Button variant="ghost" size="xs" type="button" className={`${onToggleOff ? "" : "ml-auto"}`} onClick={onRemove}>
+          <Button
+            variant="ghost"
+            size="xs"
+            type="button"
+            className={`${onToggleOff ? "" : "ml-auto"}`}
+            onClick={onRemove}
+          >
             remover grupo
           </Button>
         )}
