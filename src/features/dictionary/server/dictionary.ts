@@ -30,6 +30,12 @@ async function cacheOfActiveProfile(): Promise<Cache> {
   return cache;
 }
 
+// Esquece o que foi lido do ERP para o perfil ativo: a próxima leitura consulta o Sankhya de novo.
+export async function invalidateDictionary(): Promise<void> {
+  const { id } = await requireProfile();
+  store.__snkDictionary?.delete(id);
+}
+
 async function entries(sql: string): Promise<DictionaryEntry[]> {
   const check = checkReadOnly(sql);
   if (!check.ok) throw new Error(check.reason);

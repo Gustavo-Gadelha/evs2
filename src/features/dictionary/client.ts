@@ -10,10 +10,27 @@ function remember<T>(promise: Promise<T>, forget: () => void): Promise<T> {
   return promise;
 }
 
+// Quem mostra dados do dicionário (autocomplete) se inscreve para recarregar quando ele é invalidado.
+const listeners = new Set<() => void>();
+
+export function subscribeDictionary(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 // Ao trocar de perfil o dicionário é outro: descarta as promessas guardadas.
 export function resetDictionary(): void {
   tables = null;
   columns.clear();
+}
+
+// Invalida o cache do servidor e do navegador e lê as tabelas de novo no ERP; as colunas voltam sob demanda.
+export function refreshDictionary(): Promise<DictionaryEntry[]> {
+  columns.clear();
+  const pending = remember(api<DictionaryEntry[]>("/api/sankhya/dictionary/refresh", { method: "POST" }), () => (tables = null));
+  tables = pending;
+  pending.then(() => listeners.forEach((listener) => listener()), () => {});
+  return pending;
 }
 
 export function loadTables(): Promise<DictionaryEntry[]> {

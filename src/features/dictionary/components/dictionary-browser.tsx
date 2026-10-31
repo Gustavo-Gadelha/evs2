@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { loadColumns, loadTables } from "../client";
+import { loadColumns, loadTables, refreshDictionary } from "../client";
 import { normalize } from "../search";
 import type { DictionaryEntry } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { RefreshCwIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const MAX_ROWS = 300;
 
@@ -73,9 +75,28 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
     toast.error("Dicionário indisponível", { id: "dictionary", description: messageOf(err) });
   }
 
+  const [refreshing, setRefreshing] = useState(false);
+
   useEffect(() => {
     loadTables().then(setTables, fail);
   }, []);
+
+  // Consulta o ERP de novo (TDDTAB) e, se houver tabela escolhida, também as colunas dela.
+  async function refresh() {
+    setRefreshing(true);
+    setError(null);
+    setTables(null);
+    setColumns(null);
+    try {
+      setTables(await refreshDictionary());
+      if (selected) setColumns(await loadColumns(selected));
+      toast.success("Dicionário atualizado");
+    } catch (err) {
+      fail(err);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   function select(name: string) {
     setSelected(name);
@@ -96,6 +117,18 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
         <DialogHeader className="flex-row items-center gap-2 pr-8">
           <DialogTitle className="label">Dicionário do Sankhya</DialogTitle>
           {tables && <span className="text-xs text-muted-foreground">{tables.length} tabelas</span>}
+          <Button
+            variant="ghost"
+            size="xs"
+            type="button"
+            className="ml-auto"
+            disabled={refreshing}
+            title="Descarta o cache e consulta o dicionário no ERP de novo"
+            onClick={() => void refresh()}
+          >
+            <RefreshCwIcon data-icon="inline-start" className={refreshing ? "animate-spin" : undefined} />
+            Atualizar do ERP
+          </Button>
         </DialogHeader>
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
           <section className="flex min-h-0 flex-col gap-2">

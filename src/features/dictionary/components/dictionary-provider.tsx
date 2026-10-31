@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-import { loadColumns, loadTables } from "../client";
+import { loadColumns, loadTables, subscribeDictionary } from "../client";
 import { buildIndex, search, type SearchIndex } from "../search";
 import type { QueryState } from "@/lib/sql/query-state";
 import type { DictionaryEntry } from "@/lib/types";
@@ -41,9 +41,14 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
   const [tables, setTables] = useState<DictionaryEntry[]>([]);
   const [columns, setColumns] = useState<DictionaryEntry[]>([]);
 
+  // Sobe a cada invalidação do dicionário, para recarregar tabelas e colunas do autocomplete.
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => subscribeDictionary(() => setVersion((value) => value + 1)), []);
+
   useEffect(() => {
     loadTables().then(setTables, warn);
-  }, []);
+  }, [version]);
 
   const known = useMemo(() => new Set(tables.map((table) => table.name)), [tables]);
   const used = usedTables(state, known);
@@ -68,7 +73,7 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
     return () => {
       cancelled = true;
     };
-  }, [usedKey]);
+  }, [usedKey, version]);
 
   const api = useMemo<DictionaryApi>(() => {
     const tableIndex: SearchIndex = buildIndex(tables);
