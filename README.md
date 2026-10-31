@@ -22,6 +22,8 @@ Builder visual de SQL Oracle que roda consultas no Sankhya via `DbExplorerSP.exe
 pnpm dev               # desenvolvimento, com hot reload
 docker compose up      # abre em http://localhost:3100
 pnpm seed              # opcional: cria o perfil padrão a partir das SANKHYA_PROFILE_* do .env
+pnpm test:sql          # testes do gerador de SQL, da trava de leitura e do JOIN do dicionário (node --test)
+pnpm format            # formata o código com o Prettier (format:check só confere)
 docker compose down    # para (os dados ficam no volume `pgdata`; `down -v` apaga perfis, histórico e consultas salvas)
 ```
 
@@ -30,7 +32,9 @@ Com `pnpm dev` há hot reload, em `http://localhost:3100`; ele usa o Postgres do
 No Docker não há hot reload: depois de mudar o código ou as dependências, rode `docker compose up --build`. O `entrypoint.sh` do container aplica as migrations do Prisma no Postgres a cada subida, depois que ele fica saudável. Os dados ficam no volume `pgdata`.
 
 - **Login** é automático na primeira requisição. O botão Login força um novo login; Logout encerra a sessão no Sankhya. Um 401 dispara um novo login e uma única nova tentativa.
+- **Abas**: cada aba tem builder, SQL e resultado próprios (só na memória: recarregar a página volta a uma aba em branco). "+" ou "Nova consulta" abre uma aba; o botão direito numa aba fecha uma, as outras, as da direita, as da esquerda ou todas. Uma consulta que termina depois de você trocar de aba grava o resultado na aba certa.
 - **Builder**: FROM, JOINs, SELECT (colunas e agregações), WHERE com grupos AND/OR aninhados, GROUP BY (automático ou manual), HAVING, ORDER BY e limite (`FETCH NEXT` para 12c+, `ROWNUM` para 11g). O botão ƒ ao lado de cada expressão insere funções Oracle, envolvendo o texto selecionado.
-- **Editor SQL**: acompanha o builder até você editar à mão; depois disso, "↺ regenerar do builder" descarta a edição (com confirmação). **Ctrl/Cmd+Enter** roda o texto do editor. O editor (CodeMirror) destaca a sintaxe Oracle, sugere tabelas e colunas do dicionário (inclusive pelos aliases do FROM/JOIN).
+- **Editor SQL**: acompanha o builder até você editar à mão; depois disso, "↺ regenerar do builder" descarta a edição (com confirmação). **Ctrl/Cmd+Enter** roda o texto do editor da aba ativa. O editor (CodeMirror) destaca a sintaxe Oracle, sugere tabelas e colunas do dicionário (inclusive pelos aliases do FROM/JOIN).
+- **Dicionário** (botão na barra lateral): busca tabelas do `TDDTAB`; a tabela escolhida mostra as colunas com tipo, tamanho e valores de domínio, e os relacionamentos com outras tabelas. "Ver 20 linhas" monta um `SELECT` da tabela e "JOIN" acrescenta ao builder o JOIN de um relacionamento (a tabela precisa estar no FROM ou num JOIN). "Atualizar do ERP" descarta o cache.
 - **Resultado**: tabela virtualizada (aguenta dezenas de milhares de linhas) com ordenação por coluna, busca global, filtro por coluna (sem diferenciar maiúsculas e acentos) e menu para ocultar colunas; também JSON bruto e "Copiar CSV" com o resultado completo. Erros do Oracle aparecem com a mensagem original.
-- **Histórico**: as últimas 200 execuções ficam no Postgres (volume Docker `pgdata`, fora do repositório); o resultado só é guardado se tiver até 5 MB. Qualquer item pode virar consulta salva, e as consultas salvas também ficam no Postgres.
+- **Histórico**: as últimas 200 execuções ficam no Postgres (volume Docker `pgdata`, fora do repositório); o resultado só é guardado se tiver até 5 MB. Clicar numa entrada (ou numa consulta salva) a carrega na aba ativa, substituindo o que havia nela. O botão direito numa entrada do histórico oferece Abrir, Abrir em nova aba, Salvar como consulta e Excluir; as consultas salvas também ficam no Postgres.
