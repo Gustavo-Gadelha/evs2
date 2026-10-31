@@ -43,6 +43,7 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 | `GET/POST /api/profiles`, `PATCH/DELETE /api/profiles/[id]`, `POST /api/profiles/active` | Perfis de acesso: lista `{ profiles: [{ id, name, baseUrl, username }], activeId }` (nunca appkey, token nem senha), cria, edita (segredo em branco mantém), exclui e troca o perfil ativo; cada uma devolve a lista atualizada |
 | `GET /api/sankhya/dictionary/tables` | `[{ name, description }]` de `TDDTAB`, em cache no servidor                                                  |
 | `GET /api/sankhya/dictionary/columns?table=` | `[{ name, description }]` de `TDDCAM` para a tabela (400 `InvalidTable` se o nome não for um identificador Oracle) |
+| `GET /api/sankhya/dictionary/table?table=` | `{ columns, relations }` da tabela, em cache por perfil: colunas de `TDDCAM` (nome, descrição, `TIPCAMPO`, `TAMANHO`) com os valores de domínio de `TDDOPC`, e as ligações liberadas de `TDDLIG` (instâncias de `TDDINS`) com os pares de colunas de `TDDLGC`, vistas dos dois lados; só `SELECT`, 400 `InvalidTable` como em `columns` |
 | `POST /api/sankhya/dictionary/refresh` | Descarta o cache do dicionário do perfil ativo e lê `TDDTAB` de novo no ERP (só `SELECT`); devolve `[{ name, description }]`; as colunas voltam a ser lidas sob demanda |
 | `GET/POST/DELETE /api/history` | Lista (sem o resultado, com `hasResult`), grava (e poda além de 200) e limpa o histórico no Postgres                |
 | `GET /api/history/[id]`    | Entrada completa, com o resultado quando guardado                                                                     |
@@ -158,7 +159,7 @@ Três colunas em telas largas; empilhadas em telas estreitas.
   - Cada resultado novo começa sem filtros, ordenação ou colunas ocultas.
 - **Sidebar**:
   - Nova consulta: botão no topo, acima das consultas salvas, que limpa builder, editor e resultado;
-  - Dicionário: botão logo abaixo de Nova consulta, abre o diálogo com busca de tabelas por nome/descrição e filtro das colunas da tabela escolhida, com o botão "Atualizar do ERP", que invalida o cache (servidor e navegador) e consulta o dicionário de novo, recarregando também o autocomplete;
+  - Dicionário: botão logo abaixo de Nova consulta, abre o diálogo com busca de tabelas por nome/descrição; a tabela escolhida mostra as colunas (tipo, tamanho, valores de domínio, com filtro) e os relacionamentos, com os botões "Ver 20 linhas" (substitui a consulta por um `SELECT` de 20 linhas da tabela) e "JOIN" em cada relacionamento (acrescenta o JOIN ao builder; exige a tabela no FROM ou num JOIN, via `src/lib/sql/add-join.ts`), com o botão "Atualizar do ERP", que invalida o cache (servidor e navegador) e consulta o dicionário de novo, recarregando também o autocomplete;
   - Consultas salvas: nome + `QueryState` + SQL + se foi editado à mão; no Postgres (as do antigo `localStorage` são importadas uma vez e removidas de lá);
   - Histórico: as últimas 200 execuções no Postgres, com SQL, estado, linhas, status e horário; `state` e `result` são `jsonb` (a ordem das chaves dos objetos não é preservada); o resultado só é guardado quando tem até 5 MB e sem caractere NUL, que o jsonb não aceita (a listagem não o traz; clicar na entrada o busca); há botão de limpar.
   - Clicar em um item restaura builder e editor.
@@ -167,12 +168,12 @@ Três colunas em telas largas; empilhadas em telas estreitas.
 
 ```
 src/app/                    só roteamento: layout, page, globals.css e api/**/route.ts (cada um só reexporta o handler da feature)
-src/lib/sql/                query-state (tipos + estado vazio), to-oracle (gerador), read-only (trava de leitura), functions (menu ƒ)
+src/lib/sql/                query-state (tipos + estado vazio), to-oracle (gerador), add-join (JOIN a partir de uma ligação do dicionário), read-only (trava de leitura), functions (menu ƒ)
 src/lib/                    api (cliente HTTP), types; db/ = client Prisma, crypto (AES-256-GCM dos segredos dos perfis), `generated/` gerado e ignorado pelo git
 src/components/             combobox (Downshift); ui/ = componentes shadcn (button, input, textarea, native-select, checkbox, label, field, badge, alert, card, dialog, dropdown-menu, tabs, separator, sonner)
 src/features/sankhya/       components/auth-header; server/: auth, client, errors, redact, state, local-only e handlers login/logout/status
 src/features/query/         components/sql-editor; server/: execute (executeQuery) e handler query
-src/features/dictionary/    components/dictionary-browser e dictionary-provider (autocomplete); client (cache de promessas), search (índice, até 50); server/: dictionary (TDDTAB/TDDCAM) e handlers tables/columns/refresh
+src/features/dictionary/    components/dictionary-browser, table-detail e dictionary-provider (autocomplete); client (cache de promessas), search (índice, até 50); server/: dictionary (TDDTAB/TDDCAM), detail (TDDCAM/TDDOPC/TDDLIG/TDDINS/TDDLGC) e handlers tables/columns/table/refresh
 src/features/history/       components/sidebar e save-form; history (tipos, limites, cliente HTTP); server/: store (Prisma) e handlers history/saved
 src/features/builder/       builder, from-joins, select-list, cond-group, group-having, order-limit, expr-input, editable-list, sortable-list, list, row-actions, section
 src/features/results/       result-table, result-view

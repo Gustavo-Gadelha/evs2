@@ -1,9 +1,10 @@
 import { api } from "@/lib/api";
-import type { DictionaryEntry } from "@/lib/types";
+import type { DictionaryEntry, TableDetail } from "@/lib/types";
 
 // Cache de promessas no navegador: uma requisição por tabela; falhas saem do cache para tentar de novo.
 let tables: Promise<DictionaryEntry[]> | null = null;
 const columns = new Map<string, Promise<DictionaryEntry[]>>();
+const details = new Map<string, Promise<TableDetail>>();
 
 function remember<T>(promise: Promise<T>, forget: () => void): Promise<T> {
   promise.catch(forget);
@@ -22,11 +23,13 @@ export function subscribeDictionary(listener: () => void): () => void {
 export function resetDictionary(): void {
   tables = null;
   columns.clear();
+  details.clear();
 }
 
 // Invalida o cache do servidor e do navegador e lê as tabelas de novo no ERP; as colunas voltam sob demanda.
 export function refreshDictionary(): Promise<DictionaryEntry[]> {
   columns.clear();
+  details.clear();
   const pending = remember(api<DictionaryEntry[]>("/api/sankhya/dictionary/refresh", { method: "POST" }), () => (tables = null));
   tables = pending;
   pending.then(() => listeners.forEach((listener) => listener()), () => {});
@@ -46,6 +49,20 @@ export function loadColumns(table: string): Promise<DictionaryEntry[]> {
       () => columns.delete(name),
     );
     columns.set(name, pending);
+  }
+  return pending;
+}
+
+// Colunas com tipo e domínio, mais as ligações da tabela com outras (TDDCAM, TDDOPC, TDDLIG).
+export function loadTableDetail(table: string): Promise<TableDetail> {
+  const name = table.trim().toUpperCase().split(".").pop() ?? "";
+  let pending = details.get(name);
+  if (!pending) {
+    pending = remember(
+      api<TableDetail>(`/api/sankhya/dictionary/table?table=${encodeURIComponent(name)}`),
+      () => details.delete(name),
+    );
+    details.set(name, pending);
   }
   return pending;
 }

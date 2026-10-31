@@ -7,8 +7,9 @@ import { api } from "@/lib/api";
 import { history, savedQueries, toDraft, type HistoryEntry, type HistoryItem, type QueryDraft, type SavedQuery } from "@/features/history/history";
 import { emptyQueryState, type QueryState } from "@/lib/sql/query-state";
 import { checkReadOnly } from "@/lib/sql/read-only";
+import { addRelationJoin } from "@/lib/sql/add-join";
 import { toOracleSql } from "@/lib/sql/to-oracle";
-import type { AuthStatus, QueryResult } from "@/lib/types";
+import type { AuthStatus, QueryResult, Relation } from "@/lib/types";
 import { AuthHeader } from "@/features/sankhya/components/auth-header";
 import { DictionaryBrowser } from "@/features/dictionary/components/dictionary-browser";
 import { resetDictionary } from "@/features/dictionary/client";
@@ -115,6 +116,23 @@ export function Explorer() {
     if (manual) return;
     const { sql: nextSql, problems } = toOracleSql(next);
     if (problems.length === 0) setSql(nextSql);
+  }
+
+  // Do dicionário: substitui a consulta por um SELECT de 20 linhas da tabela.
+  function previewTable(table: string) {
+    changeState({ ...emptyQueryState(), from: { table, alias: "" }, limit: { rows: 20, offset: 0, style: "fetch" } });
+    setDictionaryOpen(false);
+  }
+
+  // Do dicionário: acrescenta ao builder o JOIN de uma ligação da tabela, que já precisa estar na consulta.
+  function addJoin(table: string, relation: Relation) {
+    const next = addRelationJoin(queryState, table, relation);
+    if (!next) {
+      toast.warning(`${table} não está no FROM nem em um JOIN`, { id: "add-join" });
+      return;
+    }
+    changeState(next);
+    toast.success(`JOIN com ${relation.table} adicionado`, { id: "add-join" });
   }
 
   function changeSql(next: string) {
@@ -235,7 +253,14 @@ export function Explorer() {
         onLogin={() => authAction("/api/sankhya/login")}
         onLogout={() => authAction("/api/sankhya/logout")}
       />
-      {dictionaryOpen && <DictionaryBrowser onClose={() => setDictionaryOpen(false)} />}
+      {dictionaryOpen && (
+        <DictionaryBrowser
+          state={queryState}
+          onClose={() => setDictionaryOpen(false)}
+          onPreview={previewTable}
+          onAddJoin={addJoin}
+        />
+      )}
       {profilesOpen && (
         <ProfilesDialog state={profileState} onChange={changeProfiles} onClose={() => setProfilesOpen(false)} />
       )}

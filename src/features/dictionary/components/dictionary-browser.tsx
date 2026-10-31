@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { loadColumns, loadTables, refreshDictionary } from "../client";
+import { loadTableDetail, loadTables, refreshDictionary } from "../client";
+import { TableDetailPanel } from "./table-detail";
+import { prefixOf } from "@/lib/sql/add-join";
+import type { QueryState } from "@/lib/sql/query-state";
 import { normalize } from "../search";
-import type { DictionaryEntry } from "@/lib/types";
+import type { DictionaryEntry, Relation, TableDetail } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -60,13 +63,23 @@ function EntryList({
   );
 }
 
-// Navegador do dicionário usado no autocomplete: busca tabelas e, ao escolher uma, filtra suas colunas.
-export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
+// Navegador do dicionário: busca tabelas e, ao escolher uma, mostra colunas, domínios e ligações, com
+// atalhos para o builder (ver 20 linhas, adicionar JOIN).
+export function DictionaryBrowser({
+  state,
+  onClose,
+  onPreview,
+  onAddJoin,
+}: {
+  state: QueryState;
+  onClose: () => void;
+  onPreview: (table: string) => void;
+  onAddJoin: (table: string, relation: Relation) => void;
+}) {
   const [tables, setTables] = useState<DictionaryEntry[] | null>(null);
-  const [columns, setColumns] = useState<DictionaryEntry[] | null>(null);
+  const [detail, setDetail] = useState<TableDetail | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [tableQuery, setTableQuery] = useState("");
-  const [columnQuery, setColumnQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // O erro também controla o "Carregando…"; o aviso usa id fixo para não repetir.
@@ -86,10 +99,10 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
     setRefreshing(true);
     setError(null);
     setTables(null);
-    setColumns(null);
+    setDetail(null);
     try {
       setTables(await refreshDictionary());
-      if (selected) setColumns(await loadColumns(selected));
+      if (selected) setDetail(await loadTableDetail(selected));
       toast.success("Dicionário atualizado");
     } catch (err) {
       fail(err);
@@ -100,16 +113,11 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
 
   function select(name: string) {
     setSelected(name);
-    setColumns(null);
-    setColumnQuery("");
-    loadColumns(name).then(
-      (entries) => setColumns((current) => (current === null ? entries : current)),
-      fail,
-    );
+    setDetail(null);
+    loadTableDetail(name).then((loaded) => setDetail((current) => (current === null ? loaded : current)), fail);
   }
 
   const visibleTables = useMemo(() => filterEntries(tables ?? [], tableQuery), [tables, tableQuery]);
-  const visibleColumns = useMemo(() => filterEntries(columns ?? [], columnQuery), [columns, columnQuery]);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -147,16 +155,19 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
             </div>
           </section>
           <section className="flex min-h-0 flex-col gap-2">
-            <Input
-              placeholder={selected ? `Buscar coluna em ${selected}` : "Escolha uma tabela"}
-              disabled={!selected}
-              value={columnQuery}
-              onChange={(event) => setColumnQuery(event.target.value)}
-            />
-            <div className="min-h-0 flex-1 overflow-auto">
-              {selected && columns === null && !error && <p className="px-2 text-xs text-muted-foreground">Carregando…</p>}
-              {columns && <EntryList entries={visibleColumns} />}
-            </div>
+            {!selected && <p className="px-2 text-xs text-muted-foreground">Escolha uma tabela.</p>}
+            {selected && detail === null && !error && <p className="px-2 text-xs text-muted-foreground">Carregando…</p>}
+            {selected && detail && (
+              <TableDetailPanel
+                key={selected}
+                table={selected}
+                detail={detail}
+                inQuery={prefixOf(state, selected) !== null}
+                onOpenTable={select}
+                onPreview={() => onPreview(selected)}
+                onAddJoin={(relation) => onAddJoin(selected, relation)}
+              />
+            )}
           </section>
         </div>
       </DialogContent>

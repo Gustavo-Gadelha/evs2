@@ -19,3 +19,22 @@ export type AuthStatus = {
 };
 
 export type DictionaryEntry = { name: string; description: string };
+
+export type ColumnOption = { value: string; label: string };
+
+// Coluna do dicionário (TDDCAM) com o tipo, o tamanho e os valores de domínio (TDDOPC), quando houver.
+export type ColumnInfo = {
+  name: string;
+  description: string;
+  type: string;
+  size: number | null;
+  options: ColumnOption[];
+};
+
+// Ligação do dicionário (TDDLIG/TDDLGC) entre a tabela consultada e `table`; `pairs` casa colunas das duas.
+export type Relation = {
+  table: string;
+  pairs: { column: string; otherColumn: string }[];
+};
+
+export type TableDetail = { columns: ColumnInfo[]; relations: Relation[] };

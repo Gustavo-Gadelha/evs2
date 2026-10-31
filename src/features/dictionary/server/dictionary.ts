@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { DictionaryEntry } from "@/lib/types";
+import type { DictionaryEntry, TableDetail } from "@/lib/types";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { executeQuery } from "@/features/query/server/execute";
 import { requireProfile } from "@/features/sankhya/server/auth";
@@ -17,16 +17,20 @@ export class InvalidTableError extends Error {
   }
 }
 
-type Cache = { tables?: DictionaryEntry[]; columns: Map<string, DictionaryEntry[]> };
+type Cache = {
+  tables?: DictionaryEntry[];
+  columns: Map<string, DictionaryEntry[]>;
+  details: Map<string, TableDetail>;
+};
 
 // No `globalThis` para sobreviver ao HMR, como o token da sessão. Um cache por perfil: cada um pode ser outro ERP.
 const store = globalThis as typeof globalThis & { __dictionary?: Map<string, Cache> };
 
-async function cacheOfActiveProfile(): Promise<Cache> {
+export async function cacheOfActiveProfile(): Promise<Cache> {
   const { id } = await requireProfile();
   const caches = (store.__dictionary ??= new Map());
   let cache = caches.get(id);
-  if (!cache) caches.set(id, (cache = { columns: new Map() }));
+  if (!cache) caches.set(id, (cache = { columns: new Map(), details: new Map() }));
   return cache;
 }
 
@@ -49,10 +53,15 @@ export async function listTables(): Promise<DictionaryEntry[]> {
   return (cache.tables ??= await entries(TABLES_SQL));
 }
 
-export async function listColumns(table: string): Promise<DictionaryEntry[]> {
-  // Aceita `OWNER.TABELA`: o dicionário só conhece o nome da tabela.
+// Aceita `OWNER.TABELA`: o dicionário só conhece o nome da tabela.
+export function tableName(table: string): string {
   const name = table.trim().toUpperCase().split(".").pop() ?? "";
   if (!IDENT.test(name)) throw new InvalidTableError(table);
+  return name;
+}
+
+export async function listColumns(table: string): Promise<DictionaryEntry[]> {
+  const name = tableName(table);
 
   const cache = await cacheOfActiveProfile();
   const cached = cache.columns.get(name);
