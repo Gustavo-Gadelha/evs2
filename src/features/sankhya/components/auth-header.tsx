@@ -33,7 +33,7 @@ export function AuthHeader({
   const hasProfile = status?.profile != null;
 
   return (
-    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-800 bg-zinc-900 px-4 py-3">
+    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-card px-4 py-3">
       <h1 className="text-sm font-semibold tracking-tight">snk-assistant</h1>
       <Badge className="h-4 rounded bg-amber-500/15 px-1.5 text-[10px] uppercase text-amber-300">local · dev-only</Badge>
       <NativeSelect
@@ -54,7 +54,7 @@ export function AuthHeader({
       <Button variant="outline" size="sm" type="button" onClick={onOpenProfiles}>
         Perfis
       </Button>
-      <code className="min-w-0 truncate text-xs text-zinc-400">
+      <code className="min-w-0 truncate text-xs text-muted-foreground">
         {status?.baseUrl ?? (status ? "nenhum perfil ativo" : "…")}
       </code>
 
@@ -66,10 +66,10 @@ export function AuthHeader({
       </Button>
 
       <div className="ml-auto flex items-center gap-3">
-        <span className="flex items-center gap-2 text-xs text-zinc-300">
+        <span className="flex items-center gap-2 text-xs text-foreground">
           <span
             aria-hidden
-            className={`size-2 rounded-full ${authenticated ? "bg-emerald-400" : "bg-zinc-600"}`}
+            className={`size-2 rounded-full ${authenticated ? "bg-emerald-400" : "bg-muted-foreground/50"}`}
           />
           {authenticated
             ? `Autenticado às ${new Date(status!.authenticatedAt!).toLocaleTimeString("pt-BR")}`

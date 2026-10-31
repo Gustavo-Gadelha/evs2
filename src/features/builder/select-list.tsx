@@ -48,7 +48,7 @@ export function SelectClause({ state, onChange }: Props) {
         <Checkbox checked={state.distinct} onCheckedChange={(checked) => onChange({ distinct: checked })} />
         DISTINCT
       </Label>
-      {items.length === 0 && <p className="text-xs text-zinc-500">Nenhuma coluna: SELECT *.</p>}
+      {items.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma coluna: SELECT *.</p>}
       <EditableList
         items={items}
         onChange={(select) => onChange({ select })}

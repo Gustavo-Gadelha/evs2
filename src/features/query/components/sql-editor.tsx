@@ -41,13 +41,13 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
         <div className="flex flex-wrap items-center gap-2">
           <span className="label">SQL</span>
           <Badge
-            className={`h-4 rounded px-1.5 text-[10px] uppercase ${manual ? "bg-amber-500/15 text-amber-300" : "bg-sky-500/15 text-sky-300"}`}
+            className={`h-4 rounded px-1.5 text-[10px] uppercase ${manual ? "bg-amber-500/15 text-amber-300" : "bg-primary/15 text-primary"}`}
           >
             {manual ? "editado à mão" : "gerado pelo builder"}
           </Badge>
           {manual &&
             (confirming ? (
-              <span className="flex items-center gap-1 text-xs text-zinc-300">
+              <span className="flex items-center gap-1 text-xs text-foreground">
                 Descartar a edição?
                 <Button
                   variant="outline" size="sm"

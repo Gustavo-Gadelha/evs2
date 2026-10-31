@@ -55,7 +55,7 @@ export function LimitClause({ state, onChange }: Props) {
   const setLimit = (patch: Partial<Limit>) => onChange({ limit: { ...limit, ...patch } });
 
   return (
-    <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-300">
+    <div className="flex flex-wrap items-center gap-3 text-xs text-foreground">
       <label className="flex items-center gap-1.5">
         linhas
         <Input

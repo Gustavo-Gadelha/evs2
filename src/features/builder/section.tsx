@@ -43,7 +43,7 @@ export function Section({ title, problems, off = 0, omitted = false, onToggleOmi
       <div className="flex flex-col gap-2 border-t p-3">
         {children}
         {problems.map((problem, index) => (
-          <p key={index} className="text-xs text-red-400">
+          <p key={index} className="text-xs text-destructive">
             {problem.message}
           </p>
         ))}

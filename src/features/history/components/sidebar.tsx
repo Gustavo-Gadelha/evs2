@@ -22,7 +22,7 @@ function ItemButton({ label, title, onClick }: { label: string; title?: string; 
   return (
     <button
       type="button"
-      className="min-w-0 flex-1 truncate rounded px-2 py-1 text-left text-sm hover:bg-zinc-800"
+      className="min-w-0 flex-1 truncate rounded px-2 py-1 text-left text-sm hover:bg-accent"
       title={title}
       onClick={onClick}
     >
@@ -35,10 +35,10 @@ export function Sidebar(props: Props) {
   const { history, saved, onLoadHistory, onLoadSaved, onSaveHistory, onRemoveSaved, onClearHistory } = props;
 
   return (
-    <aside className="flex flex-col gap-6 border-zinc-800 p-4 lg:row-span-2 lg:border-r xl:row-span-1">
+    <aside className="flex flex-col gap-6 border-border p-4 lg:row-span-2 lg:border-r xl:row-span-1">
       <section className="flex flex-col gap-2">
         <h2 className="label">Consultas salvas</h2>
-        {saved.length === 0 && <p className="text-xs text-zinc-500">Nenhuma ainda.</p>}
+        {saved.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ainda.</p>}
         <ul className="flex flex-col gap-1">
           {saved.map((query) => (
             <li key={query.id} className="group flex items-center gap-1">
@@ -64,20 +64,20 @@ export function Sidebar(props: Props) {
             Limpar
           </Button>
         </div>
-        {history.length === 0 && <p className="text-xs text-zinc-500">Vazio.</p>}
+        {history.length === 0 && <p className="text-xs text-muted-foreground">Vazio.</p>}
         <ul className="flex flex-col gap-1">
           {history.map((entry) => (
-            <li key={entry.id} className="rounded hover:bg-zinc-900">
+            <li key={entry.id} className="rounded hover:bg-accent">
               <button type="button" className="w-full px-2 pt-1 text-left" title={entry.sql} onClick={() => onLoadHistory(entry)}>
                 <div className="flex items-center gap-2 font-mono text-xs">
                   {entry.error === null ? (
                     <span className="text-emerald-400">{entry.rowCount} linha(s)</span>
                   ) : (
-                    <span className="text-red-400">erro</span>
+                    <span className="text-destructive">erro</span>
                   )}
-                  <span className="ml-auto text-zinc-500">{new Date(entry.timestamp).toLocaleTimeString("pt-BR")}</span>
+                  <span className="ml-auto text-muted-foreground">{new Date(entry.timestamp).toLocaleTimeString("pt-BR")}</span>
                 </div>
-                <div className="truncate font-mono text-xs text-zinc-300">{oneLine(entry.sql)}</div>
+                <div className="truncate font-mono text-xs text-foreground">{oneLine(entry.sql)}</div>
               </button>
               <div className="px-2 pb-1">
                 <SaveForm label="salvar como consulta" onSave={(name) => onSaveHistory(name, entry)} />

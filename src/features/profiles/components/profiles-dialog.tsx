@@ -98,7 +98,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
         <DialogHeader>
           <DialogTitle className="label">Perfis de acesso</DialogTitle>
         </DialogHeader>
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
         {editing === null ? (
           <>

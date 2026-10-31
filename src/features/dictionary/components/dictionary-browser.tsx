@@ -90,7 +90,7 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
           <DialogTitle className="label">Dicionário do Sankhya</DialogTitle>
           {tables && <span className="text-xs text-muted-foreground">{tables.length} tabelas</span>}
         </DialogHeader>
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
           <section className="flex min-h-0 flex-col gap-2">
             <Input

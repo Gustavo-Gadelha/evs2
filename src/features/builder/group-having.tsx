@@ -29,7 +29,7 @@ export function GroupByClause({ state, onChange }: Props) {
     <>
       <div className="flex gap-3 text-xs">
         {(["auto", "manual"] as const).map((option) => (
-          <label key={option} className="flex items-center gap-1.5 text-zinc-300">
+          <label key={option} className="flex items-center gap-1.5 text-foreground">
             <input
               type="radio"
               name="group-by-mode"
@@ -42,7 +42,7 @@ export function GroupByClause({ state, onChange }: Props) {
         ))}
       </div>
       {mode === "auto" ? (
-        <p className="font-mono text-xs text-zinc-400">
+        <p className="font-mono text-xs text-muted-foreground">
           {auto.length ? auto.join(", ") : "Sem agregação no SELECT: sem GROUP BY."}
         </p>
       ) : (

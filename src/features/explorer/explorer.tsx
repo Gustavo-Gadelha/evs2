@@ -227,7 +227,7 @@ export function Explorer() {
         </Alert>
       )}
       {authError && (
-        <Alert variant="destructive" className="rounded-none border-x-0 border-t-0 border-red-900 bg-red-950/60">
+        <Alert variant="destructive" className="rounded-none border-x-0 border-t-0 border-destructive/40 bg-destructive/10">
           {authError}
         </Alert>
       )}

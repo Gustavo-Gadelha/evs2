@@ -74,7 +74,7 @@ export function Dictionary({ state, children }: { state: QueryState; children: R
 
   return (
     <DictionaryContext value={api}>
-      {error && <p className="text-xs text-zinc-500">Sugestões do dicionário indisponíveis: {error}</p>}
+      {error && <p className="text-xs text-muted-foreground">Sugestões do dicionário indisponíveis: {error}</p>}
       {children}
     </DictionaryContext>
   );

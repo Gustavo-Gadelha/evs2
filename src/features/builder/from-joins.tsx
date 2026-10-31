@@ -64,7 +64,7 @@ export function JoinsClause({ state, onChange }: Props) {
       items={state.joins}
       onChange={(joins) => onChange({ joins })}
       omittable
-      rowClassName="rounded border border-zinc-800 p-2"
+      rowClassName="rounded border border-border p-2"
       add={[{ label: "+ join", make: newJoin }]}
       renderRow={(join, _, update) => (
         <>
@@ -97,7 +97,7 @@ export function JoinsClause({ state, onChange }: Props) {
       )}
       renderBelow={(join, _, update) => (
         <div className="flex items-start gap-2 pl-2">
-          <span className="pt-1 font-mono text-xs text-zinc-500">ON</span>
+          <span className="pt-1 font-mono text-xs text-muted-foreground">ON</span>
           <div className="min-w-0 flex-1">
             <CondGroupEditor group={join.on} onChange={(on) => update({ on })} />
           </div>

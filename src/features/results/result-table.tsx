@@ -162,7 +162,7 @@ export function ResultTable({ result }: { result: QueryResult }) {
           </Button>
         )}
         {filtered && (
-          <span className="text-zinc-400">
+          <span className="text-muted-foreground">
             {rows.length} de {result.rows.length} linha(s)
           </span>
         )}
@@ -196,13 +196,13 @@ export function ResultTable({ result }: { result: QueryResult }) {
 
       <div
         ref={scrollRef}
-        className={`overflow-auto rounded border border-zinc-800 ${fullscreen ? "min-h-0 flex-1" : "max-h-[60vh]"}`}
+        className={`overflow-auto rounded border border-border ${fullscreen ? "min-h-0 flex-1" : "max-h-[60vh]"}`}
       >
         <table className="grid font-mono text-xs" style={{ width: totalWidth }}>
-          <thead className="sticky top-0 z-10 grid bg-zinc-900">
+          <thead className="sticky top-0 z-10 grid bg-card">
             {table.getHeaderGroups().map((group) => (
               <tr key={group.id} className="flex">
-                <th className="shrink-0 border-b border-zinc-800 px-2 py-1.5 text-right text-zinc-500" style={{ width: numberWidth }}>
+                <th className="shrink-0 border-b border-border px-2 py-1.5 text-right text-muted-foreground" style={{ width: numberWidth }}>
                   #
                 </th>
                 {group.headers.map((header) => {
@@ -210,20 +210,20 @@ export function ResultTable({ result }: { result: QueryResult }) {
                   return (
                     <th
                       key={header.id}
-                      className="shrink-0 border-b border-zinc-800 px-2 py-1.5 text-left font-semibold text-zinc-300"
+                      className="shrink-0 border-b border-border px-2 py-1.5 text-left font-semibold text-foreground"
                       style={{ width: widthOf(header.column.id) }}
                       aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"}
                     >
                       <button
                         type="button"
-                        className="flex w-full items-center gap-1 text-left hover:text-zinc-50"
+                        className="flex w-full items-center gap-1 text-left hover:text-foreground"
                         title="Ordenar"
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         <span className="truncate">
                           <table.FlexRender header={header} />
                         </span>
-                        <span className="text-sky-400">{sorted === "asc" ? "▲" : sorted === "desc" ? "▼" : ""}</span>
+                        <span className="text-primary">{sorted === "asc" ? "▲" : sorted === "desc" ? "▼" : ""}</span>
                       </button>
                     </th>
                   );
@@ -231,9 +231,9 @@ export function ResultTable({ result }: { result: QueryResult }) {
               </tr>
             ))}
             <tr className="flex">
-              <th className="shrink-0 border-b border-zinc-800" style={{ width: numberWidth }} />
+              <th className="shrink-0 border-b border-border" style={{ width: numberWidth }} />
               {visibleColumns.map((column) => (
-                <th key={column.id} className="shrink-0 border-b border-zinc-800 p-1" style={{ width: widthOf(column.id) }}>
+                <th key={column.id} className="shrink-0 border-b border-border p-1" style={{ width: widthOf(column.id) }}>
                   <Input
                     aria-label={`Filtrar ${result.columns[Number(column.id.slice(1))]}`}
                     className="h-6 w-full px-1.5 py-0.5 text-xs font-normal md:text-xs"
@@ -251,10 +251,10 @@ export function ResultTable({ result }: { result: QueryResult }) {
               return (
                 <tr
                   key={row.id}
-                  className={`absolute flex w-full hover:bg-zinc-800/60 ${item.index % 2 ? "" : "bg-zinc-900/40"}`}
+                  className={`absolute flex w-full hover:bg-accent/60 ${item.index % 2 ? "" : "bg-muted/40"}`}
                   style={{ height: ROW_HEIGHT, transform: `translateY(${item.start}px)` }}
                 >
-                  <td className="shrink-0 px-2 text-right leading-7 text-zinc-500" style={{ width: numberWidth }}>
+                  <td className="shrink-0 px-2 text-right leading-7 text-muted-foreground" style={{ width: numberWidth }}>
                     {item.index + 1}
                   </td>
                   {row.getVisibleCells().map((cell) => {
@@ -276,7 +276,7 @@ export function ResultTable({ result }: { result: QueryResult }) {
           </tbody>
         </table>
         {rows.length === 0 && (
-          <p className="px-2 py-3 text-xs text-zinc-500">
+          <p className="px-2 py-3 text-xs text-muted-foreground">
             {result.rows.length === 0 ? "A consulta não retornou linhas." : "Nenhuma linha corresponde aos filtros."}
           </p>
         )}

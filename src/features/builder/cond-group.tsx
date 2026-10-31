@@ -204,15 +204,15 @@ function GroupBody({ group, onChange, depth = 0, onRemove, onToggleOff, rootId, 
 
   return (
     <div
-      className={`flex flex-col gap-2 ${depth > 0 ? "rounded border border-dashed border-zinc-700 p-2" : ""} ${group.off ? "opacity-50" : ""}`}
+      className={`flex flex-col gap-2 ${depth > 0 ? "rounded border border-dashed border-border p-2" : ""} ${group.off ? "opacity-50" : ""}`}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex overflow-hidden rounded border border-zinc-700 text-xs">
+        <div className="flex overflow-hidden rounded border border-border text-xs">
           {(["AND", "OR"] as const).map((op) => (
             <button
               key={op}
               type="button"
-              className={`px-2 py-0.5 ${group.op === op ? "bg-zinc-700 text-zinc-50" : "text-zinc-400 hover:bg-zinc-800"}`}
+              className={`px-2 py-0.5 ${group.op === op ? "bg-secondary text-secondary-foreground" : "text-muted-foreground hover:bg-accent"}`}
               onClick={() => onChange({ ...group, op })}
             >
               {op}

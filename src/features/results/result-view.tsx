@@ -37,10 +37,10 @@ export function ResultView({ result, error }: Props) {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="border-red-900 bg-red-950/40 p-4">
-        <AlertTitle className="label text-red-300">Erro</AlertTitle>
+      <Alert variant="destructive" className="border-destructive/40 bg-destructive/10 p-4">
+        <AlertTitle className="label text-destructive">Erro</AlertTitle>
         <AlertDescription>
-          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-red-200">{error}</pre>
+          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-destructive">{error}</pre>
         </AlertDescription>
       </Alert>
     );
@@ -73,7 +73,7 @@ export function ResultView({ result, error }: Props) {
         <CardContent className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <Badge className="bg-emerald-500/15 text-emerald-300">{rows.length} linha(s)</Badge>
-          <span className="text-zinc-400">{result.durationMs} ms</span>
+          <span className="text-muted-foreground">{result.durationMs} ms</span>
           <div className="ml-auto flex items-center gap-2">
             <Tabs value={view} onValueChange={(value) => setView(value as "table" | "json")}>
               <TabsList>
@@ -88,7 +88,7 @@ export function ResultView({ result, error }: Props) {
         </div>
 
         {view === "json" ? (
-          <pre className="max-h-[60vh] overflow-auto rounded border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs leading-relaxed">
+          <pre className="max-h-[60vh] overflow-auto rounded border border-border bg-background p-3 font-mono text-xs leading-relaxed">
             {json}
           </pre>
         ) : (

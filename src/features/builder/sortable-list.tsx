@@ -33,7 +33,7 @@ export function SortableRow<T>({ id, item, index, group, children }: RowProps<T>
     <button
       ref={handle}
       type="button"
-      className="shrink-0 cursor-grab touch-none rounded p-0.5 text-zinc-500 hover:text-zinc-200 active:cursor-grabbing"
+      className="shrink-0 cursor-grab touch-none rounded p-0.5 text-muted-foreground hover:text-foreground active:cursor-grabbing"
       aria-label="Arrastar para reordenar"
       title="Arrastar para reordenar"
     >
