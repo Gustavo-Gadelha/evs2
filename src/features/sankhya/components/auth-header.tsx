@@ -30,7 +30,12 @@ export function AuthHeader({
 
   return (
     <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-card px-4 py-3">
-      <h1 className="text-sm font-semibold tracking-tight">snk-assistant</h1>
+      <h1 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+        {/* O favicon do app (src/app/favicon.ico) é servido em /favicon.ico; é decorativo, o nome vem ao lado. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/favicon.ico" alt="" width={20} height={20} className="size-5" />
+        snk-assistant
+      </h1>
       <Badge className="h-4 rounded bg-amber-500/15 px-1.5 text-[10px] uppercase text-amber-300">development</Badge>
       <code className="min-w-0 truncate text-xs text-muted-foreground">
         {status?.baseUrl ?? (status ? "nenhum perfil ativo" : "…")}
