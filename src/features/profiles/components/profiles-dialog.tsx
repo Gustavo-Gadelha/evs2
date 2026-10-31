@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { profiles as api, type Profile, type ProfileInput, type ProfilesState } from "../profiles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 type Props = {
   state: ProfilesState;
@@ -116,9 +117,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                     <div className="flex items-center gap-2 text-sm">
                       {profile.name}
                       {profile.id === state.activeId && (
-                        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">
-                          ativo
-                        </span>
+                        <Badge className="h-4 rounded bg-emerald-500/15 px-1.5 text-[10px] uppercase text-emerald-300">ativo</Badge>
                       )}
                     </div>
                     <div className="truncate text-xs text-zinc-400">

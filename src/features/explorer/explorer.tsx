@@ -17,6 +17,7 @@ import { Builder } from "@/features/builder/builder";
 import { ResultView } from "@/features/results/result-view";
 import { Sidebar } from "@/features/history/components/sidebar";
 import { SqlEditor } from "@/features/query/components/sql-editor";
+import { Alert } from "@/components/ui/alert";
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -221,17 +222,19 @@ export function Explorer() {
         <ProfilesDialog state={profileState} onChange={changeProfiles} onClose={() => setProfilesOpen(false)} />
       )}
       {status && !status.profile && (
-        <div className="border-b border-amber-900 bg-amber-950/60 px-4 py-2 text-sm text-amber-200">
+        <Alert className="rounded-none border-x-0 border-t-0 border-amber-900 bg-amber-950/60 text-amber-200">
           Nenhum perfil de acesso ativo: abra <strong>Perfis</strong> e cadastre as credenciais do Sankhya.
-        </div>
+        </Alert>
       )}
       {authError && (
-        <div className="border-b border-red-900 bg-red-950/60 px-4 py-2 text-sm text-red-200">{authError}</div>
+        <Alert variant="destructive" className="rounded-none border-x-0 border-t-0 border-red-900 bg-red-950/60">
+          {authError}
+        </Alert>
       )}
       {storeError && (
-        <div className="border-b border-amber-900 bg-amber-950/60 px-4 py-2 text-sm text-amber-200">
+        <Alert className="rounded-none border-x-0 border-t-0 border-amber-900 bg-amber-950/60 text-amber-200">
           Falha ao acessar o banco local: {storeError}
-        </div>
+        </Alert>
       )}
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
         <Sidebar

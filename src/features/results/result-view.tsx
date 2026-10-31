@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import type { QueryResult } from "@/lib/types";
 import { ResultTable, cellText } from "./result-table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Cada resultado ganha uma tabela nova, sem herdar filtros e ordenação do anterior.
 const tableKeys = new WeakMap<QueryResult, number>();
@@ -33,10 +35,12 @@ export function ResultView({ result, error }: Props) {
 
   if (error) {
     return (
-      <section className="panel border-red-900 bg-red-950/40">
-        <p className="label text-red-300">Erro</p>
-        <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-red-200">{error}</pre>
-      </section>
+      <Alert variant="destructive" className="border-red-900 bg-red-950/40 p-4">
+        <AlertTitle className="label text-red-300">Erro</AlertTitle>
+        <AlertDescription>
+          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-red-200">{error}</pre>
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -63,9 +67,7 @@ export function ResultView({ result, error }: Props) {
   return (
     <section className="panel flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3 text-xs">
-        <span className="rounded bg-emerald-500/15 px-2 py-0.5 font-semibold text-emerald-300">
-          {rows.length} linha(s)
-        </span>
+        <Badge className="bg-emerald-500/15 text-emerald-300">{rows.length} linha(s)</Badge>
         <span className="text-zinc-400">{result.durationMs} ms</span>
         <div className="ml-auto flex items-center gap-2">
           <div className="flex overflow-hidden rounded border border-zinc-700">

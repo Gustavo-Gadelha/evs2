@@ -2,6 +2,7 @@ import type { Profile } from "@/features/profiles/profiles";
 import type { AuthStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Badge } from "@/components/ui/badge";
 
 type Props = {
   status: AuthStatus | null;
@@ -34,9 +35,7 @@ export function AuthHeader({
   return (
     <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-800 bg-zinc-900 px-4 py-3">
       <h1 className="text-sm font-semibold tracking-tight">snk-assistant</h1>
-      <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-300">
-        local · dev-only
-      </span>
+      <Badge className="h-4 rounded bg-amber-500/15 px-1.5 text-[10px] uppercase text-amber-300">local · dev-only</Badge>
       <NativeSelect
         size="sm"
         aria-label="Perfil de acesso"

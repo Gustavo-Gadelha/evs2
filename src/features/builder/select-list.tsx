@@ -5,6 +5,8 @@ import { ExprInput } from "./expr-input";
 import { EditableList } from "./editable-list";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
@@ -22,14 +24,10 @@ function AggEditor({ expr, onChange }: { expr: AggExpr; onChange: (expr: Expr) =
           <option key={fn}>{fn}</option>
         ))}
       </NativeSelect>
-      <label className="flex items-center gap-1 text-xs text-zinc-400">
-        <input
-          type="checkbox"
-          checked={expr.distinct}
-          onChange={(event) => onChange({ ...expr, distinct: event.target.checked })}
-        />
+      <Label className="gap-1 text-xs font-normal text-muted-foreground">
+        <Checkbox checked={expr.distinct} onCheckedChange={(checked) => onChange({ ...expr, distinct: checked })} />
         DISTINCT
-      </label>
+      </Label>
       <ExprInput
         label="Argumento"
         className="min-w-0 flex-1"
@@ -46,10 +44,10 @@ export function SelectClause({ state, onChange }: Props) {
 
   return (
     <>
-      <label className="flex items-center gap-2 text-xs text-zinc-300">
-        <input type="checkbox" checked={state.distinct} onChange={(event) => onChange({ distinct: event.target.checked })} />
+      <Label className="text-xs font-normal">
+        <Checkbox checked={state.distinct} onCheckedChange={(checked) => onChange({ distinct: checked })} />
         DISTINCT
-      </label>
+      </Label>
       {items.length === 0 && <p className="text-xs text-zinc-500">Nenhuma coluna: SELECT *.</p>}
       <EditableList
         items={items}

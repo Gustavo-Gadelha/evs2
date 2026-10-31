@@ -6,6 +6,7 @@ import { checkReadOnly } from "@/lib/sql/read-only";
 import { SaveForm } from "@/features/history/components/save-form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 type Props = {
   sql: string;
@@ -37,11 +38,11 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
     <section className="panel flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="label">SQL</span>
-        <span
-          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${manual ? "bg-amber-500/15 text-amber-300" : "bg-sky-500/15 text-sky-300"}`}
+        <Badge
+          className={`h-4 rounded px-1.5 text-[10px] uppercase ${manual ? "bg-amber-500/15 text-amber-300" : "bg-sky-500/15 text-sky-300"}`}
         >
           {manual ? "editado à mão" : "gerado pelo builder"}
-        </span>
+        </Badge>
         {manual &&
           (confirming ? (
             <span className="flex items-center gap-1 text-xs text-zinc-300">
