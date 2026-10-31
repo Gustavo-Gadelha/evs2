@@ -288,7 +288,7 @@ export function Explorer() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col lg:h-screen">
       <Toaster theme="dark" position="bottom-right" closeButton />
       <AuthHeader
         status={status}
@@ -312,7 +312,7 @@ export function Explorer() {
         <ProfilesDialog state={profileState} onChange={changeProfiles} onClose={() => setProfilesOpen(false)} />
       )}
       <QueryTabs tabs={tabs} activeId={active.id} onSelect={setActiveId} onClose={closeTabs} onAdd={() => addTab()} />
-      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[16rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
         <Sidebar
           history={historyItems}
           saved={saved}
@@ -325,27 +325,30 @@ export function Explorer() {
           onNewQuery={newQuery}
           onOpenDictionary={() => setDictionaryOpen(true)}
         />
-        <main className="flex min-w-0 flex-col gap-3 p-4">
-          <Builder
-            key={`${active.id}-${status?.profile?.id ?? "none"}`}
-            state={queryState}
-            problems={generated.problems}
-            onChange={changeState}
-          />
-        </main>
-        <div className="flex min-w-0 flex-col gap-4 p-4 lg:col-start-2 xl:col-start-auto">
-          <SqlEditor
-            key={`${active.id}-${status?.profile?.id ?? "none"}`}
-            sql={sql}
-            manual={manual}
-            running={running}
-            canRegenerate={generated.problems.length === 0}
-            onChange={changeSql}
-            onRegenerate={regenerate}
-            onRun={run}
-            onSave={(name) => void persist(savedQueries.save(name, { state: queryState, sql, manual }), setSaved)}
-          />
-          <ResultView result={result} error={error} />
+        {/* Do lg em diante cada coluna rola sozinha e a página não passa da altura da janela. */}
+        <div className="flex min-w-0 flex-col lg:min-h-0 lg:overflow-y-auto xl:contents">
+          <main className="flex min-w-0 flex-col gap-3 p-4 xl:min-h-0 xl:overflow-y-auto">
+            <Builder
+              key={`${active.id}-${status?.profile?.id ?? "none"}`}
+              state={queryState}
+              problems={generated.problems}
+              onChange={changeState}
+            />
+          </main>
+          <div className="flex min-w-0 flex-col gap-4 p-4 xl:min-h-0 xl:overflow-y-auto">
+            <SqlEditor
+              key={`${active.id}-${status?.profile?.id ?? "none"}`}
+              sql={sql}
+              manual={manual}
+              running={running}
+              canRegenerate={generated.problems.length === 0}
+              onChange={changeSql}
+              onRegenerate={regenerate}
+              onRun={run}
+              onSave={(name) => void persist(savedQueries.save(name, { state: queryState, sql, manual }), setSaved)}
+            />
+            <ResultView result={result} error={error} />
+          </div>
         </div>
       </div>
     </div>
