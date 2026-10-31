@@ -37,7 +37,7 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 | Rota                       | Faz                                                                                                                   |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `POST /api/sankhya/query`  | `{ sql }` (zod: não vazio, ≤ 100 KB) → `{ columns, rows, durationMs, raw }`; 400 `ReadOnlyViolation` se a trava recusar; 422 `SankhyaQueryError` com o `statusMessage` do Oracle (gateway com `status !== "1"` ou não 2xx com mensagem) |
-| `POST /api/sankhya/login`  | Força novo login; devolve só `{ ok, authenticatedAt }`                                                                |
+| `POST /api/sankhya/login`  | Faz logout da sessão existente (best-effort, mesmo inválida) e força novo login; devolve só `{ ok, authenticatedAt }` |
 | `POST /api/sankhya/logout` | Logout no Sankhya                                                                                                     |
 | `GET /api/sankhya/status`  | `{ authenticated, authenticatedAt, baseUrl, profile }` (`baseUrl`/`profile` nulos sem perfil ativo)                  |
 | `GET/POST /api/profiles`, `PATCH/DELETE /api/profiles/[id]`, `POST /api/profiles/active` | Perfis de acesso: lista `{ profiles: [{ id, name, baseUrl, username }], activeId }` (nunca appkey, token nem senha), cria, edita (segredo em branco mantém), exclui e troca o perfil ativo; cada uma devolve a lista atualizada |

@@ -140,6 +140,19 @@ export async function logoutIfActive(profileId: string): Promise<void> {
   }
 }
 
+// Relogar: encerra a sessão existente no Sankhya e autentica de novo. O logout é best-effort,
+// pois a sessão pode já estar inválida lá; a sessão local é sempre descartada.
+export async function relogin(): Promise<string> {
+  try {
+    await logout();
+  } catch (err) {
+    log.error("Logout antes do relogin falhou; seguindo com um novo login.", err);
+  } finally {
+    clearToken();
+  }
+  return authenticate();
+}
+
 export async function getAuthStatus() {
   const { bearerToken, authenticatedAt, profileId } = authState();
   const profile = await getActiveProfile();
