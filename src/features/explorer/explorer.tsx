@@ -197,7 +197,7 @@ export function Explorer() {
     }
   }
 
-  async function loadHistory(item: HistoryItem) {
+  async function loadHistory(item: HistoryItem, inNewTab = false) {
     let entry: HistoryEntry = item;
     if (item.hasResult) {
       try {
@@ -206,24 +206,26 @@ export function Explorer() {
         notifyStoreError(err);
       }
     }
-    load(entry, entry);
+    load(entry, entry, inNewTab);
   }
 
-  // Histórico e consultas salvas sempre substituem a aba ativa; para manter a atual, o usuário abre outra aba antes.
-  // Com a consulta da aba ainda rodando, não carrega: o resultado dela cairia sobre o que foi carregado.
-  function load(draft: QueryDraft, previous?: HistoryEntry) {
-    if (active.running) {
+  // Histórico e consultas salvas substituem a aba ativa; só abrem outra aba quando o usuário pede ("Abrir em nova aba").
+  // Com a consulta da aba ainda rodando, não substitui: o resultado dela cairia sobre o que foi carregado.
+  function load(draft: QueryDraft, previous?: HistoryEntry, inNewTab = false) {
+    if (!inNewTab && active.running) {
       toast.warning("A consulta desta aba ainda está rodando", { id: "load-running" });
       return;
     }
     const next = toDraft(draft);
-    patchTab(active.id, {
+    const patch: Partial<Tab> = {
       state: next.state,
       sql: next.sql,
       manual: next.manual,
       result: previous?.result ?? null,
       error: previous?.error ?? null,
-    });
+    };
+    if (inNewTab) addTab(patch);
+    else patchTab(active.id, patch);
   }
 
   function newQuery() {
@@ -316,7 +318,7 @@ export function Explorer() {
         <Sidebar
           history={historyItems}
           saved={saved}
-          onLoadHistory={(item) => void loadHistory(item)}
+          onLoadHistory={(item, inNewTab) => void loadHistory(item, inNewTab)}
           onLoadSaved={(query) => load(query)}
           onSaveHistory={(name, item) => void persist(savedQueries.save(name, item), setSaved)}
           onRemoveHistory={(id) => void persist(history.remove(id), setHistoryItems)}

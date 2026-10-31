@@ -18,7 +18,7 @@ import {
 type Props = {
   history: HistoryItem[];
   saved: SavedQuery[];
-  onLoadHistory: (entry: HistoryItem) => void;
+  onLoadHistory: (entry: HistoryItem, inNewTab?: boolean) => void;
   onLoadSaved: (query: SavedQuery) => void;
   onSaveHistory: (name: string, entry: HistoryItem) => void;
   onRemoveHistory: (id: string) => void;
@@ -155,6 +155,7 @@ export function Sidebar(props: Props) {
                     </ContextMenuTrigger>
                     <ContextMenuContent>
                       <ContextMenuItem onClick={() => onLoadHistory(entry)}>Abrir</ContextMenuItem>
+                      <ContextMenuItem onClick={() => onLoadHistory(entry, true)}>Abrir em nova aba</ContextMenuItem>
                       <ContextMenuItem onClick={() => setNaming(entry.id)}>Salvar como consulta…</ContextMenuItem>
                       <ContextMenuSeparator />
                       <ContextMenuItem variant="destructive" onClick={() => onRemoveHistory(entry.id)}>
