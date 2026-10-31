@@ -12,7 +12,6 @@ type Props = {
   busy: boolean;
   dictionaryOpen: boolean;
   profilesOpen: boolean;
-  onNewQuery: () => void;
   onOpenDictionary: () => void;
   onOpenProfiles: () => void;
   onSelectProfile: (id: string | null) => void;
@@ -27,7 +26,6 @@ export function AuthHeader({
   busy,
   dictionaryOpen,
   profilesOpen,
-  onNewQuery,
   onOpenDictionary,
   onOpenProfiles,
   onSelectProfile,
@@ -42,7 +40,6 @@ export function AuthHeader({
       <h1 className="text-sm font-semibold tracking-tight">snk-assistant</h1>
       <Badge className="h-4 rounded bg-amber-500/15 px-1.5 text-[10px] uppercase text-amber-300">local · dev-only</Badge>
       <nav aria-label="Principal" className="flex items-center gap-5">
-        <NavItem onClick={onNewQuery}>Nova consulta</NavItem>
         <NavItem
           current={dictionaryOpen}
           aria-haspopup="dialog"

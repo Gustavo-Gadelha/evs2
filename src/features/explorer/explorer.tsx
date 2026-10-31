@@ -232,7 +232,6 @@ export function Explorer() {
         busy={authBusy}
         dictionaryOpen={dictionaryOpen}
         profilesOpen={profilesOpen}
-        onNewQuery={newQuery}
         onOpenDictionary={() => setDictionaryOpen(true)}
         onOpenProfiles={() => setProfilesOpen(true)}
         onSelectProfile={(id) => void selectProfile(id)}
@@ -252,6 +251,7 @@ export function Explorer() {
           onSaveHistory={(name, item) => void persist(savedQueries.save(name, item), setSaved)}
           onRemoveSaved={(id) => void persist(savedQueries.remove(id), setSaved)}
           onClearHistory={() => void persist(history.clear(), setHistoryItems)}
+          onNewQuery={newQuery}
         />
         <main className="flex min-w-0 flex-col gap-3 p-4">
           <Builder key={status?.profile?.id ?? "none"} state={queryState} problems={generated.problems} onChange={changeState} />
