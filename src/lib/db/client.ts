@@ -5,7 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/lib/db/generated/client";
 
 // Um client só, no `globalThis`, para o HMR não abrir um pool novo a cada recarga.
-const globalForDb = globalThis as unknown as { snkDb?: PrismaClient };
+const globalForDb = globalThis as unknown as { __db?: PrismaClient };
 
 export function databaseUrl(): string {
   // No container o compose define `DATABASE_URL`; no `pnpm dev` ela vem do `.env` (ver `.env.example`).
@@ -15,8 +15,8 @@ export function databaseUrl(): string {
 }
 
 export function db(): PrismaClient {
-  if (!globalForDb.snkDb) {
-    globalForDb.snkDb = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl() }) });
+  if (!globalForDb.__db) {
+    globalForDb.__db = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl() }) });
   }
-  return globalForDb.snkDb;
+  return globalForDb.__db;
 }

@@ -5,7 +5,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 // Cifra os segredos dos perfis (AES-256-GCM). A chave (32 bytes em base64) vem de `ENCRYPTION_KEY` no `.env`,
 // fora do banco e do repositório: protege um dump do Postgres copiado sozinho, não quem lê o `.env`.
 // Gere uma com `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Trocá-la invalida os perfis salvos.
-const globalForKey = globalThis as unknown as { snkKey?: Buffer };
+const globalForKey = globalThis as unknown as { __encryptionKey?: Buffer };
 
 function loadKey(): Buffer {
   const raw = process.env.ENCRYPTION_KEY;
@@ -16,7 +16,7 @@ function loadKey(): Buffer {
 }
 
 function key(): Buffer {
-  return (globalForKey.snkKey ??= loadKey());
+  return (globalForKey.__encryptionKey ??= loadKey());
 }
 
 // Formato: base64(iv[12] | tag[16] | texto cifrado). `scripts/seed-profile.mjs` reimplementa o mesmo formato.

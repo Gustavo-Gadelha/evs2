@@ -12,7 +12,7 @@ export type FullProfile = Profile & Secret;
 type Cache = { profiles: FullProfile[]; activeId: string | null };
 
 // No `globalThis` para sobreviver ao HMR. Os segredos decifrados ficam só em memória; toda mutação recarrega.
-const globalForProfiles = globalThis as typeof globalThis & { __snkProfiles?: Cache };
+const globalForProfiles = globalThis as typeof globalThis & { __profiles?: Cache };
 
 const ACTIVE_KEY = "activeProfileId";
 
@@ -30,11 +30,11 @@ async function reload(): Promise<Cache> {
   });
   // Perfil ativo que já não existe vira "nenhum".
   const activeId = profiles.some((profile) => profile.id === setting?.value) ? (setting?.value ?? null) : null;
-  return (globalForProfiles.__snkProfiles = { profiles, activeId });
+  return (globalForProfiles.__profiles = { profiles, activeId });
 }
 
 async function load(): Promise<Cache> {
-  return globalForProfiles.__snkProfiles ?? reload();
+  return globalForProfiles.__profiles ?? reload();
 }
 
 function toPublic({ id, name, baseUrl, username }: FullProfile): Profile {
@@ -58,7 +58,7 @@ export async function getProfile(id: string): Promise<FullProfile | null> {
 // Todos os segredos conhecidos, lidos de forma síncrona pela redação de logs. Vazio até o primeiro `load`,
 // que sempre acontece antes de qualquer chamada ao Sankhya.
 export function knownSecrets(): string[] {
-  const profiles = globalForProfiles.__snkProfiles?.profiles ?? [];
+  const profiles = globalForProfiles.__profiles?.profiles ?? [];
   return profiles.flatMap((profile) => [profile.appkey, profile.token, profile.password]);
 }
 

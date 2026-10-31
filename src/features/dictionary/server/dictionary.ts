@@ -20,11 +20,11 @@ export class InvalidTableError extends Error {
 type Cache = { tables?: DictionaryEntry[]; columns: Map<string, DictionaryEntry[]> };
 
 // No `globalThis` para sobreviver ao HMR, como o token da sessão. Um cache por perfil: cada um pode ser outro ERP.
-const store = globalThis as typeof globalThis & { __snkDictionary?: Map<string, Cache> };
+const store = globalThis as typeof globalThis & { __dictionary?: Map<string, Cache> };
 
 async function cacheOfActiveProfile(): Promise<Cache> {
   const { id } = await requireProfile();
-  const caches = (store.__snkDictionary ??= new Map());
+  const caches = (store.__dictionary ??= new Map());
   let cache = caches.get(id);
   if (!cache) caches.set(id, (cache = { columns: new Map() }));
   return cache;
@@ -33,7 +33,7 @@ async function cacheOfActiveProfile(): Promise<Cache> {
 // Esquece o que foi lido do ERP para o perfil ativo: a próxima leitura consulta o Sankhya de novo.
 export async function invalidateDictionary(): Promise<void> {
   const { id } = await requireProfile();
-  store.__snkDictionary?.delete(id);
+  store.__dictionary?.delete(id);
 }
 
 async function entries(sql: string): Promise<DictionaryEntry[]> {
