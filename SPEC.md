@@ -141,6 +141,7 @@ type Cond = {
 Três colunas em telas largas; empilhadas em telas estreitas.
 
 - **Header**: título, selo "development" e base URL do perfil ativo à esquerda; à direita, seletor de perfil (dropdown `secondary` com ícone de usuário e o nome do ativo; itens de rádio), botão Perfis (diálogo de cadastro), Login/Logout e status da sessão, com o mesmo estilo (`outline`, tamanho `sm`).
+- **Abas de consulta** (`src/features/explorer/query-tabs.tsx`, estado em `tabs.ts`): barra entre o header e as colunas. Cada aba tem builder, SQL, selo de edição à mão, resultado, erro e execução próprios, só na memória do navegador (recarregar a página volta a uma aba em branco; o histórico e as consultas salvas continuam no Postgres). O título é a tabela do FROM em maiúsculas, ou "Consulta N"; mostra um spinner enquanto roda e um ponto âmbar se foi editada à mão. "+" abre uma aba em branco; fechar a última deixa uma em branco. Uma consulta que termina depois de trocar de aba grava o resultado na aba que a executou. Trocar de perfil limpa os resultados de todas as abas. Ctrl/Cmd+Enter roda a aba ativa.
 - **Builder**: seções recolhíveis FROM · JOINS · SELECT (+ DISTINCT) · WHERE (grupos AND/OR aninháveis) · GROUP BY (auto/manual) · HAVING · ORDER BY · LIMITE. Cada bloco, exceto FROM, tem no cabeçalho um checkbox "omitir" que tira a seção inteira do SQL sem apagá-la (SELECT omitido vira `SELECT *`). Linhas com adicionar, remover, ↑↓, arrastar pelo ícone de grip à esquerda (colunas, joins, condições, grupos e ordenações; também pelo teclado) e ◉/⊘ para omitir só aquele item do SQL (a seção mostra quantos estão omitidos). Campos de tabela e de expressão sugerem tabelas e `ALIAS.COLUNA` do dicionário (`<datalist>` nativo; falha do dicionário só tira as sugestões). Problemas do gerador sob a seção de origem.
 - **Editor SQL**: CodeMirror 6 (`src/features/query/components/sql-code-editor.tsx`) com destaque Oracle (PL/SQL).
   - Autocomplete do dicionário (`use-sql-schema`): tabelas do `TDDTAB` e, para as que o SQL cita, as colunas do `TDDCAM`; os aliases do FROM/JOIN são resolvidos pelo editor, e as palavras-chave e funções vêm do dialeto.
@@ -161,11 +162,11 @@ Três colunas em telas largas; empilhadas em telas estreitas.
   - Colunas identificadas pelo índice (nomes podem repetir); largura calculada pelo conteúdo (72–420px).
   - Cada resultado novo começa sem filtros, ordenação ou colunas ocultas.
 - **Sidebar**:
-  - Nova consulta: botão no topo, acima das consultas salvas, que limpa builder, editor e resultado;
+  - Nova consulta: botão no topo, acima das consultas salvas, que abre uma aba em branco;
   - Dicionário: botão logo abaixo de Nova consulta, abre o diálogo com busca de tabelas por nome/descrição; a tabela escolhida mostra as colunas (tipo, tamanho, valores de domínio, com filtro) e os relacionamentos, com os botões "Ver 20 linhas" (substitui a consulta por um `SELECT` de 20 linhas da tabela) e "JOIN" em cada relacionamento (acrescenta o JOIN ao builder; exige a tabela no FROM ou num JOIN, via `src/lib/sql/add-join.ts`), com o botão "Atualizar do ERP", que invalida o cache (servidor e navegador) e consulta o dicionário de novo, recarregando também o autocomplete;
   - Consultas salvas: nome + `QueryState` + SQL + se foi editado à mão; no Postgres (as do antigo `localStorage` são importadas uma vez e removidas de lá);
   - Histórico: as últimas 200 execuções no Postgres, com SQL, estado, linhas, status e horário; `state` e `result` são `jsonb` (a ordem das chaves dos objetos não é preservada); o resultado só é guardado quando tem até 5 MB e sem caractere NUL, que o jsonb não aceita (a listagem não o traz; clicar na entrada o busca); há botão de limpar.
-  - Clicar em um item restaura builder e editor.
+  - Clicar em um item restaura builder, editor e resultado na aba ativa se ela estiver em branco (sem SQL, sem tabela, sem resultado nem erro e sem estar rodando); senão, em uma aba nova.
 
 ## Estrutura
 
@@ -180,7 +181,7 @@ src/features/dictionary/    components/dictionary-browser, table-detail e dictio
 src/features/history/       components/sidebar e save-form; history (tipos, limites, cliente HTTP); server/: store (Prisma) e handlers history/saved
 src/features/builder/       builder, from-joins, select-list, cond-group, group-having, order-limit, expr-input, editable-list, sortable-list, list, row-actions, section
 src/features/results/       result-table, result-view
-src/features/explorer/      explorer (orquestra a tela; page.tsx importa daqui)
+src/features/explorer/      explorer (orquestra a tela; page.tsx importa daqui), tabs (tipo e helpers das abas) e query-tabs (barra de abas)
 src/features/profiles/      profiles (tipos e cliente HTTP); components/profiles-dialog; server/: store (Prisma + cache decifrado em memória) e handlers profiles, profile-by-id, active
 prisma/                     `schema.prisma` (PostgreSQL; `state` e `result` em jsonb) e migrações (aplicadas por `prisma migrate deploy` no `pnpm dev` e pelo `entrypoint.sh` na subida do container)
 compose.yaml                serviços `postgres` (postgres:18-alpine, volume `pgdata`, healthcheck) e `snk-assistant`; lê o `.env`

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { history, savedQueries, toDraft, type HistoryEntry, type HistoryItem, type QueryDraft, type SavedQuery } from "@/features/history/history";
 import { emptyQueryState, type QueryState } from "@/lib/sql/query-state";
+import { QueryTabs } from "./query-tabs";
+import { isBlank, newTab, type Tab } from "./tabs";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { addRelationJoin } from "@/lib/sql/add-join";
 import { toOracleSql } from "@/lib/sql/to-oracle";
@@ -31,12 +33,9 @@ function notifyStoreError(err: unknown) {
 }
 
 export function Explorer() {
-  const [queryState, setQueryState] = useState<QueryState>(emptyQueryState);
-  const [sql, setSql] = useState("");
-  const [manual, setManual] = useState(false);
-  const [result, setResult] = useState<QueryResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [running, setRunning] = useState(false);
+  const [tabs, setTabs] = useState<Tab[]>(() => [newTab(1)]);
+  const [activeId, setActiveId] = useState("tab-1");
+  const nextNumber = useRef(2);
   const [status, setStatus] = useState<AuthStatus | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
@@ -45,7 +44,36 @@ export function Explorer() {
   const [profileState, setProfileState] = useState<ProfilesState>({ profiles: [], activeId: null });
   const [saved, setSaved] = useState<SavedQuery[]>([]);
 
+  const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
+  const { state: queryState, sql, manual, result, error, running } = active;
+
   const generated = useMemo(() => toOracleSql(queryState), [queryState]);
+
+  // Altera uma aba pelo id: uma consulta que termina depois de a aba ser fechada ou trocada não afeta outra.
+  const patchTab = useCallback((id: string, patch: Partial<Tab>) => {
+    setTabs((current) => current.map((tab) => (tab.id === id ? { ...tab, ...patch } : tab)));
+  }, []);
+
+  function addTab(patch: Partial<Tab> = {}) {
+    const tab = { ...newTab(nextNumber.current++), ...patch };
+    setTabs((current) => [...current, tab]);
+    setActiveId(tab.id);
+  }
+
+  function closeTab(id: string) {
+    const index = tabs.findIndex((tab) => tab.id === id);
+    if (index === -1) return;
+    if (tabs.length === 1) {
+      // A última aba não some: volta em branco.
+      const fresh = newTab(nextNumber.current++);
+      setTabs([fresh]);
+      setActiveId(fresh.id);
+      return;
+    }
+    const rest = tabs.filter((tab) => tab.id !== id);
+    setTabs(rest);
+    if (id === activeId) setActiveId(rest[Math.min(index, rest.length - 1)].id);
+  }
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -93,8 +121,7 @@ export function Explorer() {
     setProfileState(next);
     if (switched) {
       resetDictionary();
-      setResult(null);
-      setError(null);
+      setTabs((current) => current.map((tab) => ({ ...tab, result: null, error: null })));
     }
     void refreshStatus();
   }
@@ -112,10 +139,8 @@ export function Explorer() {
 
   // O editor acompanha o builder até a primeira edição manual; com problemas, mantém o último SQL válido.
   function changeState(next: QueryState) {
-    setQueryState(next);
-    if (manual) return;
     const { sql: nextSql, problems } = toOracleSql(next);
-    if (problems.length === 0) setSql(nextSql);
+    patchTab(active.id, !manual && problems.length === 0 ? { state: next, sql: nextSql } : { state: next });
   }
 
   // Do dicionário: substitui a consulta por um SELECT de 20 linhas da tabela.
@@ -136,14 +161,12 @@ export function Explorer() {
   }
 
   function changeSql(next: string) {
-    setSql(next);
-    setManual(true);
+    patchTab(active.id, { sql: next, manual: true });
   }
 
   function regenerate() {
     if (generated.problems.length > 0) return;
-    setSql(generated.sql);
-    setManual(false);
+    patchTab(active.id, { sql: generated.sql, manual: false });
   }
 
   // Gravar no banco nunca derruba a consulta: a falha vira um aviso e a tela segue como está.
@@ -168,49 +191,52 @@ export function Explorer() {
     load(entry, entry);
   }
 
+  // Histórico e consultas salvas ocupam a aba ativa se ela estiver em branco; senão abrem uma aba nova.
   function load(draft: QueryDraft, previous?: HistoryEntry) {
     const next = toDraft(draft);
-    setQueryState(next.state);
-    setSql(next.sql);
-    setManual(next.manual);
-    setResult(previous?.result ?? null);
-    setError(previous?.error ?? null);
+    const patch: Partial<Tab> = {
+      state: next.state,
+      sql: next.sql,
+      manual: next.manual,
+      result: previous?.result ?? null,
+      error: previous?.error ?? null,
+    };
+    if (isBlank(active) && !active.running) patchTab(active.id, patch);
+    else addTab(patch);
   }
 
   function newQuery() {
-    load({ state: emptyQueryState(), sql: "", manual: false });
+    addTab();
   }
 
   const run = useCallback(async () => {
+    if (running) return;
+    const id = active.id;
     if (!status?.profile) {
-      setResult(null);
-      setError("Nenhum perfil ativo. Cadastre e selecione um perfil de acesso.");
+      patchTab(id, { result: null, error: "Nenhum perfil ativo. Cadastre e selecione um perfil de acesso." });
       return;
     }
     const check = checkReadOnly(sql);
     if (!check.ok) {
-      setResult(null);
-      setError(check.reason);
+      patchTab(id, { result: null, error: check.reason });
       return;
     }
 
     const draft: QueryDraft = { state: queryState, sql, manual };
-    setRunning(true);
-    setError(null);
+    patchTab(id, { running: true, error: null });
     try {
       const next = await api<QueryResult>("/api/sankhya/query", { method: "POST", body: JSON.stringify({ sql }) });
-      setResult(next);
+      patchTab(id, { result: next });
       void persist(history.add(draft, { result: next }), setHistoryItems);
     } catch (err) {
       const message = messageOf(err);
-      setResult(null);
-      setError(message);
+      patchTab(id, { result: null, error: message });
       void persist(history.add(draft, { error: message }), setHistoryItems);
     } finally {
-      setRunning(false);
+      patchTab(id, { running: false });
       void refreshStatus();
     }
-  }, [sql, queryState, manual, refreshStatus, status]);
+  }, [active.id, running, sql, queryState, manual, patchTab, refreshStatus, status]);
 
   // Ctrl/Cmd+Enter roda de qualquer lugar da página.
   const runRef = useRef(run);
@@ -264,6 +290,13 @@ export function Explorer() {
       {profilesOpen && (
         <ProfilesDialog state={profileState} onChange={changeProfiles} onClose={() => setProfilesOpen(false)} />
       )}
+      <QueryTabs
+        tabs={tabs}
+        activeId={active.id}
+        onSelect={setActiveId}
+        onClose={closeTab}
+        onAdd={() => addTab()}
+      />
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
         <Sidebar
           history={historyItems}
@@ -277,11 +310,11 @@ export function Explorer() {
           onOpenDictionary={() => setDictionaryOpen(true)}
         />
         <main className="flex min-w-0 flex-col gap-3 p-4">
-          <Builder key={status?.profile?.id ?? "none"} state={queryState} problems={generated.problems} onChange={changeState} />
+          <Builder key={`${active.id}-${status?.profile?.id ?? "none"}`} state={queryState} problems={generated.problems} onChange={changeState} />
         </main>
         <div className="flex min-w-0 flex-col gap-4 p-4 lg:col-start-2 xl:col-start-auto">
           <SqlEditor
-            key={status?.profile?.id ?? "none"}
+            key={`${active.id}-${status?.profile?.id ?? "none"}`}
             sql={sql}
             manual={manual}
             running={running}
