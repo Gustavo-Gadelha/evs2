@@ -1,31 +1,37 @@
 services:
-  # Aplica as migrations no volume `data` antes de o app subir; roda como root só para ajustar o dono do volume.
-  migrate:
-    build:
-      context: .
-      target: migrate
-    user: root
-    command: ["sh", "-c", "pnpm exec prisma migrate deploy && chown -R node:node /data"]
+  postgres:
+    image: postgres:18-alpine
     environment:
-      DATABASE_URL: file:/data/snk-assistant.db
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no .env}
+    ports:
+      # Só loopback, para o `pnpm dev` e o psql do host; nunca "5432:5432".
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - data:/data
+      # Postgres 18+: o dado fica em /var/lib/postgresql/<versão>; monte o diretório pai.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   snk-assistant:
     build:
       context: .
       target: runner
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     ports:
       # Só loopback: nunca "3100:3100", que exporia a ferramenta (e a sessão no Sankhya) na rede.
       - "127.0.0.1:3100:3100"
     environment:
-      # Histórico e consultas salvas (dados reais do ERP): só no volume, nunca no repositório.
-      DATABASE_URL: file:/data/snk-assistant.db
-    volumes:
-      - data:/data
+      # Histórico, consultas salvas e perfis (dados reais do ERP): só no volume `pgdata`, nunca no repositório.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # Chave que cifra os segredos dos perfis: vem do `.env`, separada do banco.
+      SNK_ENCRYPTION_KEY: ${SNK_ENCRYPTION_KEY:?defina SNK_ENCRYPTION_KEY no .env}
 
 volumes:
-  data:
+  pgdata:

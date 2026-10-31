@@ -46,4 +46,3 @@ next-env.d.ts
 /src/lib/db/generated
 /prisma/*.db*
 
-/prisma/*.key

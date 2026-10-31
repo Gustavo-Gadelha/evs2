@@ -1,6 +1,6 @@
 FROM node:26-alpine AS base
 
-ENV NEXT_TELEMETRY_DISABLED=1 
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV CI=true
 
 WORKDIR /app
@@ -22,14 +22,10 @@ COPY . .
 # `public/` não é versionado quando está vazio, mas o estágio final o copia.
 RUN mkdir -p public && pnpm build
 
-FROM dependencies AS migrate
-
-COPY prisma.config.ts ./
-COPY prisma ./prisma
-
-CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
-
 FROM node:26-alpine AS runner
+
+# Deve acompanhar a versão do `prisma` em pnpm-lock.yaml.
+ARG PRISMA_VERSION=7.10.1
 
 ENV NODE_ENV=production
 ENV PORT=3100
@@ -37,8 +33,17 @@ ENV HOSTNAME=0.0.0.0
 
 WORKDIR /app
 
-# Ponto de montagem do volume `data`: criado com dono `node` para o SQLite poder gravar nele.
-RUN mkdir /data && chown node:node /data
+# CLI do Prisma isolado (o standalone não o inclui), usado pelo entrypoint para aplicar as migrations.
+WORKDIR /opt/prisma
+
+RUN npm install --no-save --no-audit --no-fund prisma@${PRISMA_VERSION} \
+    && chown -R node:node /opt/prisma
+
+COPY --chown=node:node prisma.config.ts ./
+COPY --chown=node:node prisma ./prisma
+COPY --chmod=755 entrypoint.sh /entrypoint.sh
+
+WORKDIR /app
 
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./
@@ -49,4 +54,5 @@ USER node
 # 0.0.0.0 é só dentro do container; no host a porta é publicada apenas em 127.0.0.1 (compose.yaml).
 EXPOSE 3100
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "server.js"]
