@@ -3,9 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node -e \"console.error('snk-assistant is a dev-only tool: run it with docker compose up'); process.exit(1)\"",
+    "dev": "prisma generate && prisma migrate deploy && next dev",
     "build": "prisma generate && next build",
-    "start": "node -e \"console.error('snk-assistant is a dev-only tool: run it with docker compose up'); process.exit(1)\"",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit"
   },
