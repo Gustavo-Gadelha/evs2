@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatSql, mapCursor } from "../format.ts";
+import { formatSql } from "../format.ts";
 import { checkReadOnly } from "../read-only.ts";
 
 test("formata em linhas e põe palavras-chave em maiúsculas", () => {
@@ -33,13 +33,4 @@ test("texto vazio ou que não dá para formatar vira null", () => {
   assert.equal(formatSql(""), null);
   assert.equal(formatSql("   \n"), null);
   assert.equal(formatSql("select 'sem fechar"), null);
-});
-
-test("mapCursor mantém a posição contando só os caracteres que não são espaço", () => {
-  const before = "select a,b from t";
-  const after = formatSql(before);
-  const at = before.indexOf("b");
-  assert.equal(after[mapCursor(before, at + 1, after) - 1], "b");
-  assert.equal(mapCursor(before, 0, after), 0);
-  assert.equal(mapCursor(before, before.length, after), after.length);
 });

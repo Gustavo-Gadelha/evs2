@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { formatSql } from "@/lib/sql/format";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { SaveForm } from "@/features/history/components/save-form";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,16 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
     } catch {
       toast.error("Não foi possível copiar");
     }
+  }
+
+  // Escolha do usuário: o editor não reformata sozinho enquanto se digita.
+  function format() {
+    const formatted = formatSql(sql);
+    if (formatted === null) {
+      toast.info("Nada para formatar", { id: "format", description: "O SQL já está formatado ou não pôde ser lido." });
+      return;
+    }
+    onChange(formatted);
   }
 
   return (
@@ -73,6 +84,9 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
             ))}
           <div className="ml-auto flex items-center gap-2">
             <SaveForm label="Salvar consulta" onSave={onSave} />
+            <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={format}>
+              Formatar
+            </Button>
             <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={copy}>
               Copiar
             </Button>

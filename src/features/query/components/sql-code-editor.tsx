@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { PLSQL, sql as sqlLanguage, type SQLNamespace } from "@codemirror/lang-sql";
-import CodeMirror, { EditorView, Prec, Transaction, keymap, type ViewUpdate } from "@uiw/react-codemirror";
-
-import { formatSql, mapCursor } from "@/lib/sql/format";
-
-// Formata o SQL depois de o usuário parar de digitar.
-const FORMAT_DELAY_MS = 600;
-const FORMAT_EVENT = "format.sql";
+import CodeMirror, { EditorView, Prec, keymap } from "@uiw/react-codemirror";
 
 const theme = EditorView.theme({
   "&": { backgroundColor: "transparent", fontSize: "12px" },
@@ -21,17 +15,6 @@ const theme = EditorView.theme({
 // Ctrl/Cmd+Enter roda a consulta (listener da página); sem isto o editor inseriria uma linha em branco.
 const runKey = Prec.highest(keymap.of([{ key: "Mod-Enter", run: () => true }]));
 
-function formatNow(view: EditorView) {
-  const before = view.state.doc.toString();
-  const after = formatSql(before);
-  if (after === null) return;
-  view.dispatch({
-    changes: { from: 0, to: before.length, insert: after },
-    selection: { anchor: mapCursor(before, view.state.selection.main.head, after) },
-    annotations: Transaction.userEvent.of(FORMAT_EVENT),
-  });
-}
-
 type Props = {
   value: string;
   schema: SQLNamespace;
@@ -39,28 +22,12 @@ type Props = {
   onChange: (value: string) => void;
 };
 
-// Editor SQL (CodeMirror) com destaque Oracle, autocomplete do dicionário e formatação automática.
+// Editor SQL (CodeMirror) com destaque Oracle e autocomplete do dicionário.
 export function SqlCodeEditor({ value, schema, placeholder, onChange }: Props) {
-  const view = useRef<EditorView | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
-
   const extensions = useMemo(
     () => [sqlLanguage({ dialect: PLSQL, schema, upperCaseKeywords: true }), theme, runKey, EditorView.lineWrapping],
     [schema],
   );
-
-  // Só digitação e colagem do usuário agendam a formatação: mudanças vindas do builder, desfazer e a
-  // própria formatação não.
-  function onUpdate(update: ViewUpdate) {
-    const typed = update.transactions.some(
-      (tr) => tr.docChanged && (tr.isUserEvent("input") || tr.isUserEvent("delete")),
-    );
-    if (!typed) return;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => view.current && formatNow(view.current), FORMAT_DELAY_MS);
-  }
 
   return (
     <CodeMirror
@@ -73,10 +40,6 @@ export function SqlCodeEditor({ value, schema, placeholder, onChange }: Props) {
       extensions={extensions}
       basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: false, highlightActiveLineGutter: false }}
       onChange={onChange}
-      onUpdate={onUpdate}
-      onCreateEditor={(editor) => {
-        view.current = editor;
-      }}
     />
   );
 }

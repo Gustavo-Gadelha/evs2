@@ -13,14 +13,3 @@ export function formatSql(sql: string): string | null {
     return null;
   }
 }
-
-// O formatador só mexe em espaços e na caixa das palavras-chave: a posição do cursor é a mesma
-// contando só os caracteres que não são espaço.
-export function mapCursor(before: string, cursor: number, after: string): number {
-  let target = before.slice(0, cursor).replace(/\s/g, "").length;
-  if (target === 0) return 0;
-  for (let i = 0; i < after.length; i++) {
-    if (!/\s/.test(after[i]) && --target === 0) return i + 1;
-  }
-  return after.length;
-}

@@ -144,12 +144,13 @@ Três colunas em telas largas; empilhadas em telas estreitas.
 - **Builder**: seções recolhíveis FROM · JOINS · SELECT (+ DISTINCT) · WHERE (grupos AND/OR aninháveis) · GROUP BY (auto/manual) · HAVING · ORDER BY · LIMITE. Cada bloco, exceto FROM, tem no cabeçalho um checkbox "omitir" que tira a seção inteira do SQL sem apagá-la (SELECT omitido vira `SELECT *`). Linhas com adicionar, remover, ↑↓, arrastar pelo ícone de grip à esquerda (colunas, joins, condições, grupos e ordenações; também pelo teclado) e ◉/⊘ para omitir só aquele item do SQL (a seção mostra quantos estão omitidos). Campos de tabela e de expressão sugerem tabelas e `ALIAS.COLUNA` do dicionário (`<datalist>` nativo; falha do dicionário só tira as sugestões). Problemas do gerador sob a seção de origem.
 - **Editor SQL**: CodeMirror 6 (`src/features/query/components/sql-code-editor.tsx`) com destaque Oracle (PL/SQL).
   - Autocomplete do dicionário (`use-sql-schema`): tabelas do `TDDTAB` e, para as que o SQL cita, as colunas do `TDDCAM`; os aliases do FROM/JOIN são resolvidos pelo editor, e as palavras-chave e funções vêm do dialeto.
-  - Formatação automática (`src/lib/sql/format.ts`, sql-formatter em PL/SQL, palavras-chave em maiúsculas, recuo de 2): roda 600 ms depois de o usuário parar de digitar ou colar, mantém o cursor e não roda para mudanças do builder, desfazer nem para SQL que o formatador não entende (aspas sem fechar).
+  - Formatação só pelo botão "Formatar" (`src/lib/sql/format.ts`, sql-formatter em PL/SQL, palavras-chave em maiúsculas, recuo de 2); o editor nunca reformata sozinho, porque atrapalhava a digitação. Formatar conta como edição à mão. SQL que o formatador não entende (aspas sem fechar) fica como está, com um aviso.
   - Ctrl/Cmd+Enter roda a consulta (não insere linha).
   - Selo "gerado pelo builder": o editor acompanha o builder em tempo real.
   - Selo "editado à mão": a primeira edição manual congela o texto. "↺ regenerar" pede confirmação inline antes de descartar a edição.
   - Ações:
     - Rodar (Ctrl/Cmd+Enter): sempre executa o texto do editor, passando pela trava antes;
+    - Formatar;
     - Copiar;
     - Salvar consulta (nome inline).
 - **Resultado**: tabela (padrão) ou JSON bruto; número de linhas e duração; "Copiar CSV" com todas as linhas e colunas do resultado, sem aplicar filtros; erro de consulta (`statusMessage`) em destaque no painel.
