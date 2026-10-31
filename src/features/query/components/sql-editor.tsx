@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { formatSql } from "@/lib/sql/format";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { SaveForm } from "@/features/history/components/save-form";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import { SqlCodeEditor } from "./sql-code-editor";
 import { useSqlSchema } from "@/features/dictionary/use-sql-schema";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "sonner";
 
 type Props = {
   sql: string;
@@ -27,16 +25,6 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
   const [confirming, setConfirming] = useState(false);
   const check = checkReadOnly(sql);
   const schema = useSqlSchema(sql);
-
-  // Escolha do usuário: o editor não reformata sozinho enquanto se digita.
-  function format() {
-    const formatted = formatSql(sql);
-    if (formatted === null) {
-      toast.info("Nada para formatar", { id: "format", description: "O SQL já está formatado ou não pôde ser lido." });
-      return;
-    }
-    onChange(formatted);
-  }
 
   return (
     <Card size="sm">
@@ -76,9 +64,6 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
             ))}
           <div className="ml-auto flex items-center gap-2">
             <SaveForm label="Salvar consulta" onSave={onSave} />
-            <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={format}>
-              Formatar
-            </Button>
             <Button size="default" type="button" disabled={running || !check.ok} onClick={onRun}>
               {running ? "Rodando…" : "Rodar"}
               <kbd className="ml-2 hidden text-[10px] opacity-70 sm:inline">Ctrl+Enter</kbd>

@@ -9,7 +9,7 @@ Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya 
 - **Somente leitura**: uma instrução `SELECT`/`WITH` por execução (ver "Trava de leitura").
 - **Um único endpoint do Sankhya**: `DbExplorerSP.executeQuery`. Nenhum outro serviço do gateway é chamado, exceto login/logout.
 - **Dicionário somente leitura**: tabelas e colunas sugeridas vêm de `TDDTAB`/`TDDCAM`, lidas pelo mesmo `executeQuery` (SQL montado no servidor, nome da tabela validado). Tabelas, aliases e expressões continuam digitados à mão; sem navegação em árvore nem parser.
-- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones), shadcn/ui (componentes em `src/components/ui/`, com `@base-ui/react`, `class-variance-authority`, `cn`, `tw-animate-css` e `shadcn`), `sonner` (toasts), `@uiw/react-codemirror` e `@codemirror/lang-sql` (editor SQL), `sql-formatter` (formatação do SQL do usuário) e, no dev, `prettier` (formatação do código; `pnpm format`) e, para o histórico e as consultas salvas, Prisma 7 com PostgreSQL (`@prisma/client`, `@prisma/adapter-pg`, `pg`; `prisma` no dev).
+- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones), shadcn/ui (componentes em `src/components/ui/`, com `@base-ui/react`, `class-variance-authority`, `cn`, `tw-animate-css` e `shadcn`), `sonner` (toasts), `@uiw/react-codemirror` e `@codemirror/lang-sql` (editor SQL) e, no dev, `prettier` (formatação do código; `pnpm format`) e, para o histórico e as consultas salvas, Prisma 7 com PostgreSQL (`@prisma/client`, `@prisma/adapter-pg`, `pg`; `prisma` no dev).
 
 ## Integração com o Sankhya
 
@@ -145,13 +145,11 @@ Três colunas em telas largas; empilhadas em telas estreitas. Do `lg` em diante 
 - **Builder**: seções recolhíveis FROM · JOINS · SELECT (+ DISTINCT) · WHERE (grupos AND/OR aninháveis) · GROUP BY (auto/manual) · HAVING · ORDER BY · LIMITE. Cada bloco, exceto FROM, tem no cabeçalho um checkbox "omitir" que tira a seção inteira do SQL sem apagá-la (SELECT omitido vira `SELECT *`). Linhas com adicionar, remover, ↑↓, arrastar pelo ícone de grip à esquerda (colunas, joins, condições, grupos e ordenações; também pelo teclado) e ◉/⊘ para omitir só aquele item do SQL (a seção mostra quantos estão omitidos). Campos de tabela e de expressão sugerem tabelas e `ALIAS.COLUNA` do dicionário (`<datalist>` nativo; falha do dicionário só tira as sugestões). Problemas do gerador sob a seção de origem.
 - **Editor SQL**: CodeMirror 6 (`src/features/query/components/sql-code-editor.tsx`) com destaque Oracle (PL/SQL).
   - Autocomplete do dicionário (`use-sql-schema`): tabelas do `TDDTAB` e, para as que o SQL cita, as colunas do `TDDCAM`; os aliases do FROM/JOIN são resolvidos pelo editor, e as palavras-chave e funções vêm do dialeto.
-  - Formatação só pelo botão "Formatar" (`src/lib/sql/format.ts`, sql-formatter em PL/SQL, palavras-chave em maiúsculas, recuo de 2); o editor nunca reformata sozinho, porque atrapalhava a digitação. Formatar conta como edição à mão. SQL que o formatador não entende (aspas sem fechar) fica como está, com um aviso.
   - Ctrl/Cmd+Enter roda a consulta (não insere linha).
   - Selo "gerado pelo builder": o editor acompanha o builder em tempo real.
   - Selo "editado à mão": a primeira edição manual congela o texto. "↺ regenerar" pede confirmação inline antes de descartar a edição.
   - Ações:
     - Rodar (Ctrl/Cmd+Enter): sempre executa o texto do editor, passando pela trava antes;
-    - Formatar;
     - Salvar consulta (nome inline).
 - **Resultado**: tabela (padrão) ou JSON bruto; número de linhas e duração; "Copiar CSV" com todas as linhas e colunas do resultado, sem aplicar filtros; erro de consulta (`statusMessage`) em destaque no painel.
 - **Avisos**: toasts do Sonner no canto inferior direito, com ícone por tipo (erro em vermelho): falhas de login, de perfis, do dicionário e do banco, "nenhum perfil ativo" (fixo, com ação para abrir Perfis), confirmações de perfil salvo/excluído/trocado e "CSV copiado". O erro de consulta fica só no painel de resultado; a trava de leitura e os problemas do gerador continuam inline.
@@ -172,7 +170,7 @@ Três colunas em telas largas; empilhadas em telas estreitas. Do `lg` em diante 
 
 ```
 src/app/                    só roteamento: layout, page, globals.css e api/**/route.ts (cada um só reexporta o handler da feature)
-src/lib/sql/                query-state (tipos + estado vazio), to-oracle (gerador), add-join (JOIN a partir de uma ligação do dicionário), read-only (trava de leitura), format (formatador), functions (menu ƒ)
+src/lib/sql/                query-state (tipos + estado vazio), to-oracle (gerador), add-join (JOIN a partir de uma ligação do dicionário), read-only (trava de leitura), functions (menu ƒ)
 src/lib/                    api (cliente HTTP), types; db/ = client Prisma, crypto (AES-256-GCM dos segredos dos perfis), `generated/` gerado e ignorado pelo git
 src/components/             combobox (Downshift); ui/ = componentes shadcn (button, input, textarea, native-select, checkbox, label, field, badge, alert, card, dialog, context-menu, dropdown-menu, tabs, separator, sonner)
 src/features/sankhya/       components/auth-header; server/: auth, client, errors, redact, state, local-only e handlers login/logout/status
@@ -192,7 +190,7 @@ entrypoint.sh               valida `DATABASE_URL` e `ENCRYPTION_KEY`, aplica as 
 
 ## Verificação
 
-Só há testes automatizados do SQL (`pnpm test:sql`, `node --test` sobre `src/lib/sql/`: gerador, trava de leitura, JOIN do dicionário e formatador; sem testes da aplicação nem CI). `pnpm typecheck`; no container, contra um Sankhya falso: SQL gerado para join + agregação + HAVING, WHERE aninhado, os dois estilos de limite e escape de aspas; casos da trava de leitura que devem passar e ser recusados; no banco, subir o compose do zero (migrations aplicadas, colunas `jsonb`), reiniciar o app sem perder perfis, histórico nem consultas salvas, e gravar um resultado com NUL (entra sem o resultado); no navegador, o fluxo montar → editar à mão → regenerar → rodar → salvar → recarregar do histórico.
+Só há testes automatizados do SQL (`pnpm test:sql`, `node --test` sobre `src/lib/sql/`: gerador, trava de leitura, JOIN do dicionário; sem testes da aplicação nem CI). `pnpm typecheck`; no container, contra um Sankhya falso: SQL gerado para join + agregação + HAVING, WHERE aninhado, os dois estilos de limite e escape de aspas; casos da trava de leitura que devem passar e ser recusados; no banco, subir o compose do zero (migrations aplicadas, colunas `jsonb`), reiniciar o app sem perder perfis, histórico nem consultas salvas, e gravar um resultado com NUL (entra sem o resultado); no navegador, o fluxo montar → editar à mão → regenerar → rodar → salvar → recarregar do histórico.
 
 ## Fora do escopo
 
