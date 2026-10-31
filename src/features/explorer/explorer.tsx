@@ -281,6 +281,7 @@ export function Explorer() {
         </main>
         <div className="flex min-w-0 flex-col gap-4 p-4 lg:col-start-2 xl:col-start-auto">
           <SqlEditor
+            key={status?.profile?.id ?? "none"}
             sql={sql}
             manual={manual}
             running={running}

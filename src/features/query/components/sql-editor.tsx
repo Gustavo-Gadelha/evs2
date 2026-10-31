@@ -5,7 +5,8 @@ import { useState } from "react";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { SaveForm } from "@/features/history/components/save-form";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { SqlCodeEditor } from "./sql-code-editor";
+import { useSqlSchema } from "@/features/dictionary/use-sql-schema";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ type Props = {
 export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onRegenerate, onRun, onSave }: Props) {
   const [confirming, setConfirming] = useState(false);
   const check = checkReadOnly(sql);
+  const schema = useSqlSchema(sql);
 
   async function copy() {
     try {
@@ -80,13 +82,11 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
             </Button>
           </div>
         </div>
-        <Textarea
-          aria-label="SQL"
-          spellCheck={false}
-          className="min-h-64 resize-y font-mono text-xs leading-relaxed"
-          placeholder="Monte a consulta no builder ou escreva o SQL aqui."
+        <SqlCodeEditor
           value={sql}
-          onChange={(event) => onChange(event.target.value)}
+          schema={schema}
+          placeholder="Monte a consulta no builder ou escreva o SQL aqui."
+          onChange={onChange}
         />
         {sql && !check.ok && <p className="text-xs text-amber-300">{check.reason}</p>}
       </CardContent>
