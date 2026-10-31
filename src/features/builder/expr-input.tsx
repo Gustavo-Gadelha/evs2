@@ -4,6 +4,8 @@ import { useRef } from "react";
 
 import { ORACLE_FUNCTIONS, applyTemplate } from "@/lib/sql/functions";
 import { Combobox } from "@/components/combobox";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useDictionary } from "@/features/dictionary/components/dictionary-provider";
 
 type Props = {
@@ -44,25 +46,33 @@ export function ExprInput({ label, value, onChange, placeholder, className = "" 
         onChange={onChange}
         getItems={columns}
       />
-      <select
-        aria-label={`Inserir função Oracle em ${label}`}
-        title="Inserir função Oracle"
-        className="h-8 w-9 shrink-0 appearance-none rounded-lg rounded-l-none border border-l-0 border-input bg-transparent px-1 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-        value=""
-        onChange={(event) => {
-          const fn = ORACLE_FUNCTIONS.find((item) => item.label === event.target.value);
-          if (fn) insert(fn.template);
-        }}
-      >
-        <option value="" disabled>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
+              aria-label={`Inserir função Oracle em ${label}`}
+              title="Inserir função Oracle"
+              className="shrink-0 rounded-l-none border-l-0 font-mono text-sm"
+            />
+          }
+        >
           ƒ
-        </option>
-        {ORACLE_FUNCTIONS.map((fn) => (
-          <option key={fn.label} value={fn.label}>
-            {fn.label}
-          </option>
-        ))}
-      </select>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="max-h-80 w-72" finalFocus={ref}>
+          {ORACLE_FUNCTIONS.map((fn) => {
+            const [name, description] = fn.label.split(": ");
+            return (
+              <DropdownMenuItem key={fn.label} onClick={() => insert(fn.template)}>
+                <span className="font-mono text-xs font-medium">{name}</span>
+                {description && <span className="ml-auto truncate text-xs text-muted-foreground">{description}</span>}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
