@@ -2,7 +2,7 @@
 
 import { MAX_HISTORY, type HistoryItem, type SavedQuery } from "../history";
 import { SaveForm } from "./save-form";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { BookOpenIcon, PlusIcon } from "lucide-react";
 
@@ -26,6 +26,8 @@ type Props = {
   onClearHistory: () => void;
   onNewQuery: () => void;
   onOpenDictionary: () => void;
+  // Fica logo abaixo do botão Dicionário (hoje, os gatilhos Builder/Assistente).
+  children?: ReactNode;
 };
 
 function oneLine(sql: string): string {
@@ -57,6 +59,7 @@ export function Sidebar(props: Props) {
     onClearHistory,
     onNewQuery,
     onOpenDictionary,
+    children,
   } = props;
 
   // Entrada do histórico cujo nome de consulta está sendo digitado (aberto pelo menu de contexto).
@@ -83,6 +86,7 @@ export function Sidebar(props: Props) {
           <BookOpenIcon data-icon="inline-start" />
           Dicionário
         </Button>
+        {children}
       </div>
 
       <section className="flex flex-col gap-2">

@@ -324,7 +324,12 @@ export function Explorer() {
         <ProfilesDialog state={profileState} onChange={changeProfiles} onClose={() => setProfilesOpen(false)} />
       )}
       <QueryTabs tabs={tabs} activeId={active.id} onSelect={setActiveId} onClose={closeTabs} onAdd={() => addTab()} />
-      <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[16rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]">
+      {/* O Tabs envolve a grade toda: os gatilhos ficam na sidebar e os painéis na coluna do meio. */}
+      <Tabs
+        value={mode}
+        onValueChange={(value) => setMode(value as "builder" | "assistant")}
+        className="grid flex-1 grid-cols-1 gap-0 lg:min-h-0 lg:grid-cols-[16rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)]"
+      >
         <Sidebar
           history={historyItems}
           saved={saved}
@@ -336,38 +341,37 @@ export function Explorer() {
           onClearHistory={() => void persist(history.clear(), setHistoryItems)}
           onNewQuery={newQuery}
           onOpenDictionary={() => setDictionaryOpen(true)}
-        />
+        >
+          <TabsList className="w-full">
+            <TabsTrigger value="builder">Builder</TabsTrigger>
+            <TabsTrigger value="assistant">
+              <SparklesIcon /> Assistente
+            </TabsTrigger>
+          </TabsList>
+        </Sidebar>
         {/* Do lg em diante cada coluna rola sozinha e a página não passa da altura da janela. */}
         <div className="flex min-w-0 flex-col lg:min-h-0 lg:overflow-y-auto xl:contents">
           <main className="flex min-w-0 flex-col gap-3 p-4 xl:min-h-0 xl:overflow-y-auto">
             {/* keepMounted: alternar não perde o estado de seções do builder nem interrompe a resposta do assistente. */}
-            <Tabs value={mode} onValueChange={(value) => setMode(value as "builder" | "assistant")} className="flex-1">
-              <TabsList>
-                <TabsTrigger value="builder">Builder</TabsTrigger>
-                <TabsTrigger value="assistant">
-                  <SparklesIcon /> Assistente
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="builder" keepMounted>
-                <Builder
-                  key={`${active.id}-${status?.profile?.id ?? "none"}`}
-                  state={queryState}
-                  problems={generated.problems}
-                  onChange={changeState}
-                />
-              </TabsContent>
-              <TabsContent value="assistant" keepMounted className="flex min-h-0 flex-col">
-                <AssistantPanel
-                  key={active.id}
-                  tabId={active.id}
-                  chat={active.chat}
-                  sql={sql}
-                  onChatChange={changeChat}
-                  onUseSql={changeSql}
-                  onOpenInNewTab={(next) => addTab({ sql: next, manual: true })}
-                />
-              </TabsContent>
-            </Tabs>
+            <TabsContent value="builder" keepMounted>
+              <Builder
+                key={`${active.id}-${status?.profile?.id ?? "none"}`}
+                state={queryState}
+                problems={generated.problems}
+                onChange={changeState}
+              />
+            </TabsContent>
+            <TabsContent value="assistant" keepMounted className="flex min-h-0 flex-col">
+              <AssistantPanel
+                key={active.id}
+                tabId={active.id}
+                chat={active.chat}
+                sql={sql}
+                onChatChange={changeChat}
+                onUseSql={changeSql}
+                onOpenInNewTab={(next) => addTab({ sql: next, manual: true })}
+              />
+            </TabsContent>
           </main>
           <div className="flex min-w-0 flex-col gap-4 p-4 xl:min-h-0 xl:overflow-y-auto">
             <SqlEditor
@@ -384,7 +388,7 @@ export function Explorer() {
             <ResultView result={result} error={error} />
           </div>
         </div>
-      </div>
+      </Tabs>
     </div>
   );
 }

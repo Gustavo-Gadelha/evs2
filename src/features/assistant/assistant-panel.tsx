@@ -1,13 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CopyIcon, ExternalLinkIcon, SendIcon, SquareIcon, Trash2Icon } from "lucide-react";
+import { DatabaseIcon, ExternalLinkIcon, SendIcon, SquareIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { checkReadOnly } from "@/lib/sql/read-only";
+import { useHighlightedCode } from "@/hooks/use-highlighted-code";
 import { Badge } from "@/components/ui/badge";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  CodeBlock,
+  CodeBlockActions,
+  CodeBlockContent,
+  CodeBlockCopyButton,
+  CodeBlockFooter,
+  CodeBlockHeader,
+  CodeBlockLine,
+  CodeBlockTitle,
+} from "@/components/ui/code-block";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
+import { Message, MessageContent } from "@/components/ui/message";
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from "@/components/ui/message-scroller";
 import { streamChat } from "./client";
 import type { ChatMessage } from "./protocol";
 import { splitMessage } from "./sql-blocks";
@@ -38,72 +59,72 @@ function SqlBlock({
   onUse: () => void;
   onOpenInNewTab: () => void;
 }) {
+  const lines = useHighlightedCode(code, "sql");
   const check = checkReadOnly(code);
   const blocked = open || !check.ok;
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(code);
-      toast.success("SQL copiado", { id: "assistant-copy" });
-    } catch {
-      toast.error("Não foi possível copiar", { id: "assistant-copy" });
-    }
-  }
-
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-background">
-      <pre className="overflow-x-auto p-2 font-mono text-xs whitespace-pre">{code}</pre>
-      {!open && !check.ok && <p className="border-t border-border px-2 py-1 text-xs text-amber-300">{check.reason}</p>}
-      <div className="flex flex-wrap items-center gap-1 border-t border-border p-1">
+    <CodeBlock size="sm">
+      <CodeBlockHeader>
+        <CodeBlockTitle>
+          <DatabaseIcon />
+          SQL
+        </CodeBlockTitle>
+        <CodeBlockActions>
+          <CodeBlockCopyButton value={code} disabled={open} />
+        </CodeBlockActions>
+      </CodeBlockHeader>
+      <CodeBlockContent>
+        {lines.map((line, index) => (
+          <CodeBlockLine key={index}>{line}</CodeBlockLine>
+        ))}
+      </CodeBlockContent>
+      <CodeBlockFooter className="flex-wrap">
         <Button size="xs" type="button" disabled={blocked} onClick={onUse}>
           Usar no editor
         </Button>
         <Button size="xs" variant="outline" type="button" disabled={blocked} onClick={onOpenInNewTab}>
           <ExternalLinkIcon /> Abrir em nova aba
         </Button>
-        <Button size="xs" variant="ghost" type="button" disabled={open} onClick={() => void copy()}>
-          <CopyIcon /> Copiar
-        </Button>
-      </div>
-    </div>
+        {!open && !check.ok && <span className="text-xs text-amber-300">{check.reason}</span>}
+      </CodeBlockFooter>
+    </CodeBlock>
   );
 }
 
-function Message({
+function AssistantMessage({
   message,
+  pending,
   onUseSql,
   onOpenInNewTab,
 }: {
   message: ChatMessage;
+  pending: boolean;
   onUseSql: (sql: string) => void;
   onOpenInNewTab: (sql: string) => void;
 }) {
-  if (message.role === "user") {
-    return (
-      <div className="ml-8 self-end rounded-lg bg-primary/15 px-3 py-2 text-sm whitespace-pre-wrap">
-        {message.content}
-      </div>
-    );
-  }
   const parts = splitMessage(message.content);
   return (
-    <div className="mr-4 flex flex-col gap-2 text-sm">
-      {parts.map((part, index) =>
-        part.kind === "text" ? (
-          <p key={index} className="whitespace-pre-wrap">
-            {part.text}
-          </p>
-        ) : (
-          <SqlBlock
-            key={index}
-            code={part.code}
-            open={part.open}
-            onUse={() => onUseSql(part.code)}
-            onOpenInNewTab={() => onOpenInNewTab(part.code)}
-          />
-        ),
-      )}
-    </div>
+    <Message>
+      <MessageContent>
+        {parts.length === 0 && pending && <p className="text-muted-foreground">Pensando…</p>}
+        {parts.map((part, index) =>
+          part.kind === "text" ? (
+            <p key={index} className="whitespace-pre-wrap">
+              {part.text}
+            </p>
+          ) : (
+            <SqlBlock
+              key={index}
+              code={part.code}
+              open={part.open}
+              onUse={() => onUseSql(part.code)}
+              onOpenInNewTab={() => onOpenInNewTab(part.code)}
+            />
+          ),
+        )}
+      </MessageContent>
+    </Message>
   );
 }
 
@@ -111,13 +132,10 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const abort = useRef<AbortController | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const form = useRef<HTMLFormElement>(null);
 
   // Trocar de aba de consulta desmonta o painel: a resposta em andamento é interrompida.
   useEffect(() => () => abort.current?.abort(), []);
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
-  }, [chat]);
 
   async function send(text: string) {
     const content = text.trim();
@@ -154,6 +172,8 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
     }
   }
 
+  const lastId = chat[chat.length - 1]?.id;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -174,64 +194,96 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
         </Button>
       </div>
 
-      <div className="flex min-h-64 flex-1 flex-col gap-3 overflow-y-auto rounded-lg border border-border bg-card p-3">
-        {chat.length === 0 ? (
-          <div className="m-auto flex max-w-sm flex-col items-center gap-2 text-center">
-            <p className="text-sm text-muted-foreground">
-              Descreva o que você precisa e o assistente sugere o SQL, usando o dicionário do Sankhya.
-            </p>
-            {SUGGESTIONS.map((suggestion) => (
-              <Button
-                key={suggestion}
-                variant="outline"
-                size="sm"
-                type="button"
-                className="h-auto whitespace-normal"
-                onClick={() => void send(suggestion)}
-              >
-                {suggestion}
-              </Button>
-            ))}
-          </div>
-        ) : (
-          chat.map((message) => (
-            <Message key={message.id} message={message} onUseSql={onUseSql} onOpenInNewTab={onOpenInNewTab} />
-          ))
-        )}
-        <div ref={endRef} />
+      <div className="relative flex min-h-80 flex-1 rounded-lg border border-border bg-card">
+        <MessageScrollerProvider autoScroll>
+          <MessageScroller>
+            <MessageScrollerViewport className="p-3">
+              <MessageScrollerContent>
+                {chat.length === 0 && (
+                  <p className="m-auto max-w-sm text-center text-sm text-muted-foreground">
+                    Descreva o que você precisa e o assistente sugere o SQL, usando o dicionário do Sankhya.
+                  </p>
+                )}
+                {chat.map((message) => (
+                  <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === "user"}>
+                    {message.role === "user" ? (
+                      <Message align="end">
+                        <MessageContent>
+                          <Bubble align="end" variant="tinted">
+                            <BubbleContent className="whitespace-pre-wrap">{message.content}</BubbleContent>
+                          </Bubble>
+                        </MessageContent>
+                      </Message>
+                    ) : (
+                      <AssistantMessage
+                        message={message}
+                        pending={busy && message.id === lastId}
+                        onUseSql={onUseSql}
+                        onOpenInNewTab={onOpenInNewTab}
+                      />
+                    )}
+                  </MessageScrollerItem>
+                ))}
+              </MessageScrollerContent>
+            </MessageScrollerViewport>
+            <MessageScrollerButton />
+          </MessageScroller>
+        </MessageScrollerProvider>
       </div>
 
+      {chat.length === 0 && (
+        <div className="flex scroll-fade-x gap-2 overflow-x-auto overscroll-x-contain">
+          {SUGGESTIONS.map((suggestion) => (
+            <Button
+              key={suggestion}
+              variant="outline"
+              size="sm"
+              type="button"
+              className="shrink-0"
+              disabled={busy}
+              onClick={() => void send(suggestion)}
+            >
+              {suggestion}
+            </Button>
+          ))}
+        </div>
+      )}
+
       <form
-        className="flex items-end gap-2"
+        ref={form}
         onSubmit={(event) => {
           event.preventDefault();
           void send(input);
         }}
       >
-        <Textarea
-          className="max-h-40 min-h-9"
-          rows={1}
-          value={input}
-          placeholder="Descreva a consulta… (Enter envia, Shift+Enter quebra a linha)"
-          onChange={(event) => setInput(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
-              event.preventDefault();
-              void send(input);
-            }
-          }}
-        />
-        {busy ? (
-          <Button type="button" variant="outline" onClick={() => abort.current?.abort()}>
-            <SquareIcon /> Parar
-          </Button>
-        ) : (
-          <Button type="submit" disabled={!input.trim()}>
-            <SendIcon /> Enviar
-          </Button>
-        )}
+        <InputGroup>
+          <InputGroupTextarea
+            className="max-h-40 min-h-9"
+            rows={1}
+            value={input}
+            placeholder="Descreva a consulta… (Enter envia, Shift+Enter quebra a linha)"
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+                event.preventDefault();
+                form.current?.requestSubmit();
+              }
+            }}
+          />
+          <InputGroupAddon align="block-end">
+            <span className="text-xs text-muted-foreground">Respostas de IA podem errar: revise o SQL.</span>
+            {busy ? (
+              <InputGroupButton className="ml-auto" variant="outline" size="sm" onClick={() => abort.current?.abort()}>
+                <SquareIcon /> Parar
+              </InputGroupButton>
+            ) : (
+              <InputGroupButton className="ml-auto" type="submit" variant="default" size="sm" disabled={!input.trim()}>
+                <SendIcon /> Enviar
+              </InputGroupButton>
+            )}
+          </InputGroupAddon>
+        </InputGroup>
       </form>
-      <p className="text-xs text-muted-foreground">Respostas de IA podem errar: revise o SQL antes de rodar.</p>
     </div>
   );
 }
