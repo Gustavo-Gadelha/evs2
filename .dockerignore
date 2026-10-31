@@ -2,6 +2,7 @@ node_modules
 .next
 src/lib/db/generated
 prisma/*.db*
+prisma/*.key
 .git
 .env*
 .idea

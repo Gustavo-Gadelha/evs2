@@ -33,3 +33,18 @@ model SavedQuery {
 
   @@index([savedAt])
 }
+
+// `secret` guarda appkey, token, usuário e senha como JSON cifrado (AES-256-GCM, ver `src/lib/db/crypto.ts`).
+model Profile {
+  id        String   @id
+  name      String   @unique
+  baseUrl   String
+  secret    String
+  createdAt DateTime @default(now())
+}
+
+// Chave/valor para o estado do app; hoje só `activeProfileId`.
+model AppSetting {
+  key   String @id
+  value String
+}

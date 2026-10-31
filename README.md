@@ -4,7 +4,7 @@ Builder visual de SQL Oracle que roda consultas no Sankhya via `DbExplorerSP.exe
 
 ## ⚠️ Ferramenta local
 
-- Roda **só** na sua máquina, **só** para você, **só** via Docker Compose. A imagem Docker é um build standalone de produção; `pnpm dev` e `pnpm start` saem com erro de propósito e `pnpm build` só serve ao Dockerfile.
+- Roda **só** na sua máquina, **só** para você, via Docker Compose (build standalone de produção) ou via `pnpm dev`, que escuta apenas em `127.0.0.1:3100`. Não há script `start` e `pnpm build` só serve ao Dockerfile.
 - A porta é publicada apenas no loopback (`127.0.0.1:3100`). Não troque por `"3100:3100"`: isso expõe a ferramenta, e a sessão autenticada no Sankhya, a qualquer um na rede.
 - As rotas da API recusam requisições com `Host` ou `Origin` que não sejam `localhost`/`127.0.0.1`.
 - Só leitura: o servidor aceita uma única instrução `SELECT`/`WITH` e recusa `;`, DML, DDL e PL/SQL. É uma checagem léxica: ela não impede uma função PL/SQL que grave de ser chamada dentro de um SELECT.
@@ -12,23 +12,20 @@ Builder visual de SQL Oracle que roda consultas no Sankhya via `DbExplorerSP.exe
 
 ## Setup
 
-1. Instale o Docker (Docker Desktop no Windows/macOS). Não precisa de Node no host.
-2. Crie o arquivo de credenciais:
-
-   ```sh
-   cp .env.example .env.local
-   ```
-
-   Preencha `SANKHYA_BASE_URL`, `SANKHYA_APPKEY`, `SANKHYA_TOKEN`, `SANKHYA_USERNAME` e `SANKHYA_PASSWORD`. Se faltar alguma, o servidor não sobe e diz qual.
+1. Instale o Docker (Docker Desktop no Windows/macOS) para o modo Docker; para o `pnpm dev`, instale Node 26 e pnpm 12 e rode `pnpm install`.
+2. Não há arquivo de credenciais: ao abrir o app, clique em **Perfis** e cadastre um perfil (nome, base URL, appkey, token, usuário e senha). Cadastre quantos quiser e escolha o ativo no seletor do header; trocar de perfil encerra a sessão do anterior e o login do novo acontece na primeira requisição. Os segredos ficam no SQLite, cifrados (AES-256-GCM) com uma chave gerada em `snk-assistant.key`, ao lado do banco (`prisma/` no `pnpm dev`, volume `data` no Docker); nunca voltam ao navegador. Ao editar um perfil, appkey, token e senha em branco mantêm o valor atual.
 
 ## Uso
 
 ```sh
+pnpm dev               # desenvolvimento, com hot reload
 docker compose up      # abre em http://localhost:3100
 docker compose down    # para
 ```
 
-Não há hot reload: depois de mudar o código ou as dependências, rode `docker compose up --build`. O serviço `migrate` aplica as migrations do Prisma no volume `data` a cada subida.
+Com `pnpm dev` há hot reload, em `http://localhost:3100`; ele aplica as migrations e guarda o histórico em `prisma/dev.db` (ignorado pelo git), separado do volume do Docker. Não rode os dois ao mesmo tempo (mesma porta).
+
+No Docker não há hot reload: depois de mudar o código ou as dependências, rode `docker compose up --build`. O serviço `migrate` aplica as migrations do Prisma no volume `data` a cada subida.
 
 - **Login** é automático na primeira requisição. O botão Login força um novo login; Logout encerra a sessão no Sankhya. Um 401 dispara um novo login e uma única nova tentativa.
 - **Builder**: FROM, JOINs, SELECT (colunas e agregações), WHERE com grupos AND/OR aninhados, GROUP BY (automático ou manual), HAVING, ORDER BY e limite (`FETCH NEXT` para 12c+, `ROWNUM` para 11g). O botão ƒ ao lado de cada expressão insere funções Oracle, envolvendo o texto selecionado.

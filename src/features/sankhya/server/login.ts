@@ -7,5 +7,5 @@ import { localOnly } from "./local-only";
 export const POST = localOnly(async () => {
   clearToken();
   await authenticate();
-  return Response.json({ ok: true, authenticatedAt: getAuthStatus().authenticatedAt });
+  return Response.json({ ok: true, authenticatedAt: (await getAuthStatus()).authenticatedAt });
 });

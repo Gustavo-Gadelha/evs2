@@ -1,7 +1,6 @@
 import "server-only";
 
-import { getEnv } from "@/lib/env";
-import { authenticate, clearToken, getBearerToken } from "./auth";
+import { authenticate, clearToken, getBearerToken, requireProfile } from "./auth";
 import { SankhyaClientError, SankhyaTimeoutError, isTimeout, type UpstreamResponse } from "./errors";
 import { log, redactHeaders, redactText } from "./redact";
 
@@ -14,13 +13,13 @@ export type RequestOptions = {
 
 export class InvalidPathError extends Error {}
 
-// Aceita só caminhos relativos a SANKHYA_BASE_URL, para que o proxy não seja apontado para outro host.
-export function resolveUrl(path: string, query?: Record<string, string>): URL {
-  const base = new URL(`${getEnv().SANKHYA_BASE_URL.replace(/\/+$/, "")}/`);
+// Aceita só caminhos relativos à base URL do perfil ativo, para que o proxy não seja apontado para outro host.
+export function resolveUrl(baseUrl: string, path: string, query?: Record<string, string>): URL {
+  const base = new URL(`${baseUrl.replace(/\/+$/, "")}/`);
   const trimmed = path.trim();
 
   if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) || trimmed.startsWith("//")) {
-    throw new InvalidPathError("Use um caminho relativo à SANKHYA_BASE_URL, não uma URL absoluta.");
+    throw new InvalidPathError("Use um caminho relativo à base URL do perfil, não uma URL absoluta.");
   }
   if (trimmed.includes("\\")) {
     throw new InvalidPathError("O caminho não pode conter barra invertida.");
@@ -40,7 +39,7 @@ export function resolveUrl(path: string, query?: Record<string, string>): URL {
 
   const url = new URL(trimmed.replace(/^\/+/, ""), base);
   if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) {
-    throw new InvalidPathError("O caminho resolve para fora da SANKHYA_BASE_URL.");
+    throw new InvalidPathError("O caminho resolve para fora da base URL do perfil.");
   }
   if (url.pathname.replace(base.pathname, "").replace(/\/+$/, "") === "login") {
     throw new InvalidPathError("Use o botão Login: o endpoint /login não passa pelo proxy.");
@@ -96,7 +95,7 @@ async function send(method: string, url: URL, bearerToken: string, options: Requ
 }
 
 export async function request(method: string, path: string, options: RequestOptions = {}): Promise<UpstreamResponse> {
-  const url = resolveUrl(path, options.query);
+  const url = resolveUrl((await requireProfile()).baseUrl, path, options.query);
   const startedAt = performance.now();
 
   let response = await send(method, url, await getBearerToken(), options);

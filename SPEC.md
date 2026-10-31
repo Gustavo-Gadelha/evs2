@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya via `DbExplorerSP.executeQuery`: um builder visual gera o SQL, o editor permite ajustá-lo à mão, e o resultado aparece em tabela. Um único usuário (o desenvolvedor), rodando só na própria máquina. Roda como build de produção (standalone) dentro do Docker Compose, nunca com deploy fora da máquina.
+Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya via `DbExplorerSP.executeQuery`: um builder visual gera o SQL, o editor permite ajustá-lo à mão, e o resultado aparece em tabela. Um único usuário (o desenvolvedor), rodando só na própria máquina. Roda como build de produção (standalone) dentro do Docker Compose ou, para desenvolver, com `pnpm dev` em loopback; nunca com deploy fora da máquina.
 
 ## Escopo
 
@@ -19,7 +19,8 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 - **Sessão**: `Authorization: Bearer <token>` em toda requisição. Login sob demanda na primeira requisição; token em cache no `globalThis` (sobrevive ao HMR).
 - **Logout**: `POST {BASE_URL}/gateway/v1/mge/service.sbr?serviceName=MobileLoginSP.logout` com os 4 headers + bearer; timeout 10s. Sem token, é no-op.
 - **Consulta**: `POST gateway/v1/mge/service.sbr?serviceName=DbExplorerSP.executeQuery&outputType=json` com `{ serviceName, requestBody: { sql } }`; timeout 30s. 401 → limpa o token, refaz o login e tenta **uma** vez de novo.
-- **Erros**: `SankhyaAuthError` (502), `SankhyaTimeoutError` (504), `SankhyaClientError` (502). O gateway responde 200 mesmo quando a consulta falha: `status !== "1"` no corpo é erro de consulta, com a mensagem do Oracle em `statusMessage`.
+- **Perfil ativo**: base URL e credenciais vêm do perfil ativo (SQLite); sem perfil, as rotas do Sankhya respondem 409 `NoActiveProfileError`. O token em cache guarda o `profileId` e só vale para ele; trocar, editar ou excluir o perfil faz logout (melhor esforço) e descarta o token. O cache do dicionário é por perfil.
+- **Erros**: `SankhyaAuthError` (502), `SankhyaTimeoutError` (504), `SankhyaClientError` (502), `NoActiveProfileError` (409). O gateway responde 200 mesmo quando a consulta falha: `status !== "1"` no corpo é erro de consulta, com a mensagem do Oracle em `statusMessage`.
 
 ## Rotas
 
@@ -28,7 +29,8 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 | `POST /api/sankhya/query`  | `{ sql }` (zod: não vazio, ≤ 100 KB) → `{ columns, rows, durationMs, raw }`; 400 `ReadOnlyViolation` se a trava recusar; 422 `SankhyaQueryError` com o `statusMessage` do Oracle (gateway com `status !== "1"` ou não 2xx com mensagem) |
 | `POST /api/sankhya/login`  | Força novo login; devolve só `{ ok, authenticatedAt }`                                                                |
 | `POST /api/sankhya/logout` | Logout no Sankhya                                                                                                     |
-| `GET /api/sankhya/status`  | `{ authenticated, authenticatedAt, baseUrl }`                                                                         |
+| `GET /api/sankhya/status`  | `{ authenticated, authenticatedAt, baseUrl, profile }` (`baseUrl`/`profile` nulos sem perfil ativo)                  |
+| `GET/POST /api/profiles`, `PATCH/DELETE /api/profiles/[id]`, `POST /api/profiles/active` | Perfis de acesso: lista `{ profiles: [{ id, name, baseUrl, username }], activeId }` (nunca appkey, token nem senha), cria, edita (segredo em branco mantém), exclui e troca o perfil ativo; cada uma devolve a lista atualizada |
 | `GET /api/sankhya/dictionary/tables` | `[{ name, description }]` de `TDDTAB`, em cache no servidor                                                  |
 | `GET /api/sankhya/dictionary/columns?table=` | `[{ name, description }]` de `TDDCAM` para a tabela (400 `InvalidTable` se o nome não for um identificador Oracle) |
 | `GET/POST/DELETE /api/history` | Lista (sem o resultado, com `hasResult`), grava (e poda além de 200) e limpa o histórico no SQLite                |
@@ -39,13 +41,13 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 
 ## Proteções
 
-1. Credenciais só em `.env.local` (`SANKHYA_BASE_URL`, `SANKHYA_APPKEY`, `SANKHYA_TOKEN`, `SANKHYA_USERNAME`, `SANKHYA_PASSWORD`), sem `NEXT_PUBLIC_`, validadas com zod na subida (`src/instrumentation.ts`).
-2. (Removida.) As rotas não checam mais `NODE_ENV`: o build standalone sempre roda em produção. A proteção passa a depender das proteções 3 e 4.
+1. Credenciais só nos perfis do SQLite (`Profile.secret`: appkey, token, usuário e senha em JSON cifrado com AES-256-GCM, `src/lib/db/crypto.ts`). A chave é gerada em `snk-assistant.key` (modo 0600) ao lado do banco, fora do repositório (`prisma/*.key` no `.gitignore` e no `.dockerignore`): protege o `.db` copiado sozinho, não quem lê o volume inteiro. Appkey, token e senha nunca saem do servidor (as rotas de perfil só devolvem nome, base URL e usuário), sem `NEXT_PUBLIC_`; a redação de logs cobre os segredos de todos os perfis. Não há credenciais em `.env*` nem no `compose.yaml`.
+2. (Removida.) As rotas não checam `NODE_ENV`; a proteção depende das proteções 3 e 4.
 3. Rotas recusam `Host` que não seja `localhost`/`127.0.0.1` e `Origin` presente e não local (DNS rebinding e cross-site).
-4. Só Docker Compose: build standalone (`node server.js`) em `0.0.0.0:3100` dentro do container, publicado apenas em `127.0.0.1:3100`; as migrations rodam no serviço `migrate` antes do app. `dev`/`start` do `package.json` saem com erro; `build` roda `prisma generate && next build` e só serve ao Dockerfile.
+4. Só na máquina local: Docker Compose ou `pnpm dev`. `pnpm dev` roda `prisma generate`, `prisma migrate deploy` e `next dev --hostname 127.0.0.1 --port 3100` (loopback, nunca `0.0.0.0`), com SQLite em `prisma/dev.db`. No Docker: build standalone (`node server.js`) em `0.0.0.0:3100` dentro do container, publicado apenas em `127.0.0.1:3100`; as migrations rodam no serviço `migrate` antes do app. O `package.json` não tem script `start`; `build` roda `prisma generate && next build` e só serve ao Dockerfile.
 5. Senha, token, appkey e bearer token nunca aparecem em logs nem em respostas (headers e corpos passam por redação).
 6. O navegador não escolhe path, método nem headers: a única chamada ao gateway é a de `executeQuery`, montada no servidor.
-7. O banco SQLite (`/data/snk-assistant.db`) guarda dados reais do ERP: fica num volume Docker nomeado (`data`), fora do repositório e do bind mount; `src/lib/db/` e os `server/` das features começam com `import "server-only"` e as rotas `/api/history` e `/api/saved` passam pelas mesmas proteções 2 e 3 (`localOnly`).
+7. O banco SQLite (`/data/snk-assistant.db`) guarda dados reais do ERP: fica num volume Docker nomeado (`data`) ou, no `pnpm dev`, em `prisma/dev.db` (ignorado pelo git), fora do bind mount; `src/lib/db/` e os `server/` das features começam com `import "server-only"` e as rotas `/api/history` e `/api/saved` passam pelas mesmas proteções 2 e 3 (`localOnly`).
 
 ## Trava de leitura
 
@@ -152,7 +154,7 @@ Três colunas em telas largas; empilhadas em telas estreitas.
 ```
 src/app/                    só roteamento: layout, page, globals.css e api/**/route.ts (cada um só reexporta o handler da feature)
 src/lib/sql/                query-state (tipos + estado vazio), to-oracle (gerador), read-only (trava de leitura), functions (menu ƒ)
-src/lib/                    api (cliente HTTP), types, env (zod, usado por instrumentation.ts); db/ = client Prisma, `generated/` gerado e ignorado pelo git
+src/lib/                    api (cliente HTTP), types; db/ = client Prisma, crypto (AES-256-GCM dos segredos dos perfis), `generated/` gerado e ignorado pelo git
 src/components/             combobox (Downshift), UI genérica
 src/features/sankhya/       components/auth-header; server/: auth, client, errors, redact, state, local-only e handlers login/logout/status
 src/features/query/         components/sql-editor; server/: execute (executeQuery) e handler query
@@ -161,7 +163,7 @@ src/features/history/       components/sidebar e save-form; history (tipos, limi
 src/features/builder/       builder, from-joins, select-list, cond-group, group-having, order-limit, expr-input, editable-list, sortable-list, list, row-actions, section
 src/features/results/       result-table, result-view
 src/features/explorer/      explorer (orquestra a tela; page.tsx importa daqui)
-src/instrumentation.ts      valida o ambiente na subida
+src/features/profiles/      profiles (tipos e cliente HTTP); components/profiles-dialog; server/: store (Prisma + cache decifrado em memória) e handlers profiles, profile-by-id, active
 prisma/                     `schema.prisma` e migrações (aplicadas por `prisma migrate deploy` na subida do container)
 ```
 

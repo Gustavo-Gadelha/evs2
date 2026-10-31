@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getEnv } from "@/lib/env";
+import { knownSecrets } from "@/features/profiles/server/store";
 import { authState } from "./state";
 
 const REDACTED = "[REDACTED]";
@@ -9,8 +9,8 @@ const REDACTED = "[REDACTED]";
 const SECRET_HEADERS = new Set(["appkey", "token", "username", "password", "authorization", "cookie", "set-cookie"]);
 
 function secretValues(): string[] {
-  const env = getEnv();
-  const values = [env.SANKHYA_APPKEY, env.SANKHYA_TOKEN, env.SANKHYA_PASSWORD, authState().bearerToken];
+  // Segredos de todos os perfis, não só do ativo: nada vaza em log ao trocar de perfil.
+  const values = [...knownSecrets(), authState().bearerToken];
   return values.filter((value): value is string => Boolean(value));
 }
 

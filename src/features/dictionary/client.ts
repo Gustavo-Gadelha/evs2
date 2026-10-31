@@ -10,6 +10,12 @@ function remember<T>(promise: Promise<T>, forget: () => void): Promise<T> {
   return promise;
 }
 
+// Ao trocar de perfil o dicionário é outro: descarta as promessas guardadas.
+export function resetDictionary(): void {
+  tables = null;
+  columns.clear();
+}
+
 export function loadTables(): Promise<DictionaryEntry[]> {
   return (tables ??= remember(api<DictionaryEntry[]>("/api/sankhya/dictionary/tables"), () => (tables = null)));
 }

@@ -1,25 +1,25 @@
 import "server-only";
 
-import { getEnv } from "@/lib/env";
-import { SankhyaAuthError, SankhyaTimeoutError, isTimeout } from "./errors";
+import { getActiveProfile, getProfile, type FullProfile } from "@/features/profiles/server/store";
+import { NoActiveProfileError, SankhyaAuthError, SankhyaTimeoutError, isTimeout } from "./errors";
 import { log } from "./redact";
 import { authState } from "./state";
 
 // Reference: https://developer.sankhya.com.br/reference/post_login-1
 const TIMEOUT_MS = 10_000;
 
-function baseUrl(): string {
-  return getEnv().SANKHYA_BASE_URL.replace(/\/+$/, "");
+export async function requireProfile(): Promise<FullProfile> {
+  const profile = await getActiveProfile();
+  if (!profile) throw new NoActiveProfileError();
+  return profile;
 }
 
-function credentialHeaders(): Record<string, string> {
-  const env = getEnv();
-  return {
-    appkey: env.SANKHYA_APPKEY,
-    token: env.SANKHYA_TOKEN,
-    username: env.SANKHYA_USERNAME,
-    password: env.SANKHYA_PASSWORD,
-  };
+function baseUrl(profile: FullProfile): string {
+  return profile.baseUrl.replace(/\/+$/, "");
+}
+
+function credentialHeaders(profile: FullProfile): Record<string, string> {
+  return { appkey: profile.appkey, token: profile.token, username: profile.username, password: profile.password };
 }
 
 async function post(url: string, headers: Record<string, string>, action: string): Promise<Response> {
@@ -35,9 +35,9 @@ async function post(url: string, headers: Record<string, string>, action: string
   }
 }
 
-async function login(): Promise<string> {
-  const url = `${baseUrl()}/login`;
-  const response = await post(url, credentialHeaders(), "login");
+async function login(profile: FullProfile): Promise<string> {
+  const url = `${baseUrl(profile)}/login`;
+  const response = await post(url, credentialHeaders(profile), "login");
 
   if (!response.ok) {
     log.error(`Sankhya login returned ${response.status} ${response.statusText}: POST ${url}`);
@@ -67,49 +67,86 @@ async function login(): Promise<string> {
 
 export async function authenticate(): Promise<string> {
   const state = authState();
+  const profile = await requireProfile();
 
-  state.pendingLogin ??= login()
+  // Um login em andamento de outro perfil não serve a este.
+  if (state.pendingLogin && state.pendingProfileId !== profile.id) state.pendingLogin = null;
+
+  state.pendingProfileId = profile.id;
+  state.pendingLogin ??= login(profile)
     .then((bearerToken) => {
       state.bearerToken = bearerToken;
+      state.profileId = profile.id;
       state.authenticatedAt = new Date().toISOString();
-      log.info("Login realizado.");
+      log.info(`Login realizado (perfil "${profile.name}").`);
       return bearerToken;
     })
     .finally(() => {
       state.pendingLogin = null;
+      state.pendingProfileId = null;
     });
 
   return state.pendingLogin;
 }
 
-// Autentica sob demanda na primeira requisição e reaproveita o token em cache.
+// Autentica sob demanda na primeira requisição e reaproveita o token em cache, se for do perfil ativo.
 export async function getBearerToken(): Promise<string> {
-  return authState().bearerToken ?? authenticate();
+  const state = authState();
+  const profile = await requireProfile();
+  if (state.bearerToken !== null && state.profileId === profile.id) return state.bearerToken;
+  clearToken();
+  return authenticate();
 }
 
-export function clearToken(): void {
+// Sem `profileId`, limpa a sessão guardada; com ele, só se for desse perfil.
+export function clearToken(profileId?: string): void {
   const state = authState();
+  if (profileId !== undefined && state.profileId !== profileId) return;
   state.bearerToken = null;
   state.authenticatedAt = null;
+  state.profileId = null;
 }
 
-export async function logout(): Promise<void> {
-  const { bearerToken } = authState();
-  if (bearerToken === null) return;
-
-  const url = `${baseUrl()}/gateway/v1/mge/service.sbr?serviceName=MobileLoginSP.logout`;
-  const response = await post(url, { ...credentialHeaders(), Authorization: `Bearer ${bearerToken}` }, "logout");
+async function logoutProfile(profile: FullProfile, bearerToken: string): Promise<void> {
+  const url = `${baseUrl(profile)}/gateway/v1/mge/service.sbr?serviceName=MobileLoginSP.logout`;
+  const response = await post(url, { ...credentialHeaders(profile), Authorization: `Bearer ${bearerToken}` }, "logout");
 
   if (!response.ok) {
     log.error(`Sankhya logout returned ${response.status} ${response.statusText}: POST ${url}`);
     throw new SankhyaAuthError(`Logout recusado pelo Sankhya (${response.status} ${response.statusText}).`);
   }
+}
+
+export async function logout(): Promise<void> {
+  const { bearerToken, profileId } = authState();
+  if (bearerToken === null || profileId === null) return;
+
+  const profile = await getProfile(profileId);
+  if (profile) await logoutProfile(profile, bearerToken);
 
   clearToken();
   log.info("Logout realizado.");
 }
 
-export function getAuthStatus() {
-  const { bearerToken, authenticatedAt } = authState();
-  return { authenticated: bearerToken !== null, authenticatedAt, baseUrl: baseUrl() };
+// Usado ao trocar, editar ou excluir um perfil: tenta o logout no Sankhya, mas o erro nunca impede a operação.
+export async function logoutIfActive(profileId: string): Promise<void> {
+  if (authState().profileId !== profileId) return;
+  try {
+    await logout();
+  } catch (err) {
+    log.error("Logout ao trocar de perfil falhou; a sessão local foi descartada.", err);
+  } finally {
+    clearToken(profileId);
+  }
+}
+
+export async function getAuthStatus() {
+  const { bearerToken, authenticatedAt, profileId } = authState();
+  const profile = await getActiveProfile();
+  return {
+    authenticated: bearerToken !== null && profile !== null && profileId === profile.id,
+    authenticatedAt,
+    baseUrl: profile ? baseUrl(profile) : null,
+    profile: profile ? { id: profile.id, name: profile.name } : null,
+  };
 }

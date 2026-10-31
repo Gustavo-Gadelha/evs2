@@ -3,6 +3,7 @@ import "server-only";
 import type { DictionaryEntry } from "@/lib/types";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { executeQuery } from "@/features/query/server/execute";
+import { requireProfile } from "@/features/sankhya/server/auth";
 
 // Dicionário de dados do Sankhya (TDDTAB/TDDCAM), lido pelo mesmo `executeQuery`. O SQL é montado aqui;
 // o navegador só informa o nome da tabela, validado antes de entrar na consulta.
@@ -18,9 +19,16 @@ export class InvalidTableError extends Error {
 
 type Cache = { tables?: DictionaryEntry[]; columns: Map<string, DictionaryEntry[]> };
 
-// No `globalThis` para sobreviver ao HMR, como o token da sessão.
-const store = globalThis as typeof globalThis & { __snkDictionary?: Cache };
-const cache: Cache = (store.__snkDictionary ??= { columns: new Map() });
+// No `globalThis` para sobreviver ao HMR, como o token da sessão. Um cache por perfil: cada um pode ser outro ERP.
+const store = globalThis as typeof globalThis & { __snkDictionary?: Map<string, Cache> };
+
+async function cacheOfActiveProfile(): Promise<Cache> {
+  const { id } = await requireProfile();
+  const caches = (store.__snkDictionary ??= new Map());
+  let cache = caches.get(id);
+  if (!cache) caches.set(id, (cache = { columns: new Map() }));
+  return cache;
+}
 
 async function entries(sql: string): Promise<DictionaryEntry[]> {
   const check = checkReadOnly(sql);
@@ -31,6 +39,7 @@ async function entries(sql: string): Promise<DictionaryEntry[]> {
 }
 
 export async function listTables(): Promise<DictionaryEntry[]> {
+  const cache = await cacheOfActiveProfile();
   return (cache.tables ??= await entries(TABLES_SQL));
 }
 
@@ -39,6 +48,7 @@ export async function listColumns(table: string): Promise<DictionaryEntry[]> {
   const name = table.trim().toUpperCase().split(".").pop() ?? "";
   if (!IDENT.test(name)) throw new InvalidTableError(table);
 
+  const cache = await cacheOfActiveProfile();
   const cached = cache.columns.get(name);
   if (cached) return cached;
 

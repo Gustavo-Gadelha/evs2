@@ -53,6 +53,15 @@ export class SankhyaQueryError extends SankhyaError {
   }
 }
 
+// Nenhum perfil de acesso ativo: não há credenciais para falar com o Sankhya.
+export class NoActiveProfileError extends SankhyaError {
+  override readonly httpStatus = 409;
+
+  constructor(message = "Nenhum perfil ativo. Cadastre e selecione um perfil de acesso.", options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
 export function isTimeout(err: unknown): boolean {
   return err instanceof DOMException && err.name === "TimeoutError";
 }

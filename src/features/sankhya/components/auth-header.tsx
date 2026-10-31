@@ -1,16 +1,33 @@
+import type { Profile } from "@/features/profiles/profiles";
 import type { AuthStatus } from "@/lib/types";
 
 type Props = {
   status: AuthStatus | null;
+  profiles: Profile[];
+  activeId: string | null;
   busy: boolean;
   onNewQuery: () => void;
   onOpenDictionary: () => void;
+  onOpenProfiles: () => void;
+  onSelectProfile: (id: string | null) => void;
   onLogin: () => void;
   onLogout: () => void;
 };
 
-export function AuthHeader({ status, busy, onNewQuery, onOpenDictionary, onLogin, onLogout }: Props) {
+export function AuthHeader({
+  status,
+  profiles,
+  activeId,
+  busy,
+  onNewQuery,
+  onOpenDictionary,
+  onOpenProfiles,
+  onSelectProfile,
+  onLogin,
+  onLogout,
+}: Props) {
   const authenticated = status?.authenticated ?? false;
+  const hasProfile = status?.profile != null;
 
   return (
     <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-800 bg-zinc-900 px-4 py-3">
@@ -18,7 +35,26 @@ export function AuthHeader({ status, busy, onNewQuery, onOpenDictionary, onLogin
       <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-300">
         local · dev-only
       </span>
-      <code className="min-w-0 truncate text-xs text-zinc-400">{status?.baseUrl ?? "…"}</code>
+      <select
+        aria-label="Perfil de acesso"
+        className="input w-auto max-w-48"
+        value={activeId ?? ""}
+        disabled={busy || profiles.length === 0}
+        onChange={(event) => onSelectProfile(event.target.value || null)}
+      >
+        {profiles.length === 0 && <option value="">Sem perfis</option>}
+        {profiles.map((profile) => (
+          <option key={profile.id} value={profile.id}>
+            {profile.name}
+          </option>
+        ))}
+      </select>
+      <button type="button" className="btn" onClick={onOpenProfiles}>
+        Perfis
+      </button>
+      <code className="min-w-0 truncate text-xs text-zinc-400">
+        {status?.baseUrl ?? (status ? "nenhum perfil ativo" : "…")}
+      </code>
 
       <button type="button" className="btn" onClick={onNewQuery}>
         Nova consulta
@@ -37,7 +73,7 @@ export function AuthHeader({ status, busy, onNewQuery, onOpenDictionary, onLogin
             ? `Autenticado às ${new Date(status!.authenticatedAt!).toLocaleTimeString("pt-BR")}`
             : "Sem sessão (login automático na 1ª requisição)"}
         </span>
-        <button type="button" className="btn" disabled={busy} onClick={onLogin}>
+        <button type="button" className="btn" disabled={busy || !hasProfile} onClick={onLogin}>
           {authenticated ? "Relogar" : "Login"}
         </button>
         <button type="button" className="btn" disabled={busy || !authenticated} onClick={onLogout}>

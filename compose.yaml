@@ -21,7 +21,6 @@ services:
     ports:
       # Só loopback: nunca "3100:3100", que exporia a ferramenta (e a sessão no Sankhya) na rede.
       - "127.0.0.1:3100:3100"
-    env_file: .env.local
     environment:
       # Histórico e consultas salvas (dados reais do ERP): só no volume, nunca no repositório.
       DATABASE_URL: file:/data/snk-assistant.db

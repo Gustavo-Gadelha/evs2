@@ -10,6 +10,9 @@ import { toOracleSql } from "@/lib/sql/to-oracle";
 import type { AuthStatus, QueryResult } from "@/lib/types";
 import { AuthHeader } from "@/features/sankhya/components/auth-header";
 import { DictionaryBrowser } from "@/features/dictionary/components/dictionary-browser";
+import { resetDictionary } from "@/features/dictionary/client";
+import { ProfilesDialog } from "@/features/profiles/components/profiles-dialog";
+import { profiles, type ProfilesState } from "@/features/profiles/profiles";
 import { Builder } from "@/features/builder/builder";
 import { ResultView } from "@/features/results/result-view";
 import { Sidebar } from "@/features/history/components/sidebar";
@@ -32,6 +35,8 @@ export function Explorer() {
   const [storeError, setStoreError] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [dictionaryOpen, setDictionaryOpen] = useState(false);
+  const [profilesOpen, setProfilesOpen] = useState(false);
+  const [profileState, setProfileState] = useState<ProfilesState>({ profiles: [], activeId: null });
   const [saved, setSaved] = useState<SavedQuery[]>([]);
 
   const generated = useMemo(() => toOracleSql(queryState), [queryState]);
@@ -56,7 +61,32 @@ export function Explorer() {
       }
     })();
     void refreshStatus();
+    void profiles.list().then(setProfileState, (err) => setAuthError(messageOf(err)));
   }, [refreshStatus]);
+
+  // Trocar, editar ou excluir perfis muda o ERP: o dicionário e o resultado em tela deixam de valer.
+  function changeProfiles(next: ProfilesState) {
+    const switched = next.activeId !== profileState.activeId;
+    setProfileState(next);
+    if (switched) {
+      resetDictionary();
+      setResult(null);
+      setError(null);
+    }
+    void refreshStatus();
+  }
+
+  async function selectProfile(id: string | null) {
+    setAuthBusy(true);
+    setAuthError(null);
+    try {
+      changeProfiles(await profiles.activate(id));
+    } catch (err) {
+      setAuthError(messageOf(err));
+    } finally {
+      setAuthBusy(false);
+    }
+  }
 
   // O editor acompanha o builder até a primeira edição manual; com problemas, mantém o último SQL válido.
   function changeState(next: QueryState) {
@@ -113,6 +143,11 @@ export function Explorer() {
   }
 
   const run = useCallback(async () => {
+    if (!status?.profile) {
+      setResult(null);
+      setError("Nenhum perfil ativo. Cadastre e selecione um perfil de acesso.");
+      return;
+    }
     const check = checkReadOnly(sql);
     if (!check.ok) {
       setResult(null);
@@ -136,7 +171,7 @@ export function Explorer() {
       setRunning(false);
       void refreshStatus();
     }
-  }, [sql, queryState, manual, refreshStatus]);
+  }, [sql, queryState, manual, refreshStatus, status]);
 
   // Ctrl/Cmd+Enter roda de qualquer lugar da página.
   const runRef = useRef(run);
@@ -171,13 +206,25 @@ export function Explorer() {
     <div className="flex min-h-screen flex-col">
       <AuthHeader
         status={status}
+        profiles={profileState.profiles}
+        activeId={profileState.activeId}
         busy={authBusy}
         onNewQuery={newQuery}
         onOpenDictionary={() => setDictionaryOpen(true)}
+        onOpenProfiles={() => setProfilesOpen(true)}
+        onSelectProfile={(id) => void selectProfile(id)}
         onLogin={() => authAction("/api/sankhya/login")}
         onLogout={() => authAction("/api/sankhya/logout")}
       />
       {dictionaryOpen && <DictionaryBrowser onClose={() => setDictionaryOpen(false)} />}
+      {profilesOpen && (
+        <ProfilesDialog state={profileState} onChange={changeProfiles} onClose={() => setProfilesOpen(false)} />
+      )}
+      {status && !status.profile && (
+        <div className="border-b border-amber-900 bg-amber-950/60 px-4 py-2 text-sm text-amber-200">
+          Nenhum perfil de acesso ativo: abra <strong>Perfis</strong> e cadastre as credenciais do Sankhya.
+        </div>
+      )}
       {authError && (
         <div className="border-b border-red-900 bg-red-950/60 px-4 py-2 text-sm text-red-200">{authError}</div>
       )}
@@ -197,7 +244,7 @@ export function Explorer() {
           onClearHistory={() => void persist(history.clear(), setHistoryItems)}
         />
         <main className="flex min-w-0 flex-col gap-3 p-4">
-          <Builder state={queryState} problems={generated.problems} onChange={changeState} />
+          <Builder key={status?.profile?.id ?? "none"} state={queryState} problems={generated.problems} onChange={changeState} />
         </main>
         <div className="flex min-w-0 flex-col gap-4 p-4 lg:col-start-2 xl:col-start-auto">
           <SqlEditor
