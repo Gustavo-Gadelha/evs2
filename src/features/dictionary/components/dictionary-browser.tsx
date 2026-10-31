@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { loadColumns, loadTables } from "../client";
 import { normalize } from "../search";
 import type { DictionaryEntry } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const MAX_ROWS = 300;
 
@@ -37,29 +37,28 @@ function EntryList({
           <button
             type="button"
             disabled={!onSelect}
-            className={`flex w-full flex-col items-start rounded px-2 py-1 text-left enabled:hover:bg-zinc-800 ${
-              selected === entry.name ? "bg-zinc-800" : ""
+            className={`flex w-full flex-col items-start rounded px-2 py-1 text-left enabled:hover:bg-accent ${
+              selected === entry.name ? "bg-accent" : ""
             }`}
             onClick={() => onSelect?.(entry.name)}
           >
-            <span className="font-mono text-xs text-zinc-100">{entry.name}</span>
-            {entry.description && <span className="text-xs text-zinc-400">{entry.description}</span>}
+            <span className="font-mono text-xs text-foreground">{entry.name}</span>
+            {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
           </button>
         </li>
       ))}
       {entries.length > MAX_ROWS && (
-        <li className="px-2 py-1 text-xs text-zinc-500">
+        <li className="px-2 py-1 text-xs text-muted-foreground">
           Mostrando {MAX_ROWS} de {entries.length}: refine a busca.
         </li>
       )}
-      {entries.length === 0 && <li className="px-2 py-1 text-xs text-zinc-500">Nada encontrado.</li>}
+      {entries.length === 0 && <li className="px-2 py-1 text-xs text-muted-foreground">Nada encontrado.</li>}
     </ul>
   );
 }
 
 // Navegador do dicionário usado no autocomplete: busca tabelas e, ao escolher uma, filtra suas colunas.
 export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const [tables, setTables] = useState<DictionaryEntry[] | null>(null);
   const [columns, setColumns] = useState<DictionaryEntry[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -68,7 +67,6 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    dialog.current?.showModal();
     loadTables().then(setTables, (err) => setError(messageOf(err)));
   }, []);
 
@@ -86,20 +84,12 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
   const visibleColumns = useMemo(() => filterEntries(columns ?? [], columnQuery), [columns, columnQuery]);
 
   return (
-    <dialog
-      ref={dialog}
-      onClose={onClose}
-      onClick={(event) => event.target === dialog.current && dialog.current.close()}
-      className="m-auto h-[80vh] w-[min(56rem,95vw)] rounded-lg border border-zinc-700 bg-zinc-900 p-0 text-zinc-100 backdrop:bg-black/60"
-    >
-      <div className="flex h-full flex-col gap-3 p-4">
-        <div className="flex items-center gap-2">
-          <h2 className="label">Dicionário do Sankhya</h2>
-          {tables && <span className="text-xs text-zinc-500">{tables.length} tabelas</span>}
-          <Button variant="ghost" size="xs" type="button" className="ml-auto" aria-label="Fechar" onClick={() => dialog.current?.close()}>
-            ✕
-          </Button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex h-[80vh] flex-col gap-3 sm:max-w-4xl">
+        <DialogHeader className="flex-row items-center gap-2 pr-8">
+          <DialogTitle className="label">Dicionário do Sankhya</DialogTitle>
+          {tables && <span className="text-xs text-muted-foreground">{tables.length} tabelas</span>}
+        </DialogHeader>
         {error && <p className="text-xs text-red-400">{error}</p>}
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
           <section className="flex min-h-0 flex-col gap-2">
@@ -111,7 +101,7 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
             />
             <div className="min-h-0 flex-1 overflow-auto">
               {tables === null && !error ? (
-                <p className="px-2 text-xs text-zinc-500">Carregando…</p>
+                <p className="px-2 text-xs text-muted-foreground">Carregando…</p>
               ) : (
                 <EntryList entries={visibleTables} selected={selected} onSelect={select} />
               )}
@@ -125,12 +115,12 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
               onChange={(event) => setColumnQuery(event.target.value)}
             />
             <div className="min-h-0 flex-1 overflow-auto">
-              {selected && columns === null && !error && <p className="px-2 text-xs text-zinc-500">Carregando…</p>}
+              {selected && columns === null && !error && <p className="px-2 text-xs text-muted-foreground">Carregando…</p>}
               {columns && <EntryList entries={visibleColumns} />}
             </div>
           </section>
         </div>
-      </div>
-    </dialog>
+      </DialogContent>
+    </Dialog>
   );
 }

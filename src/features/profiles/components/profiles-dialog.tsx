@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { profiles as api, type Profile, type ProfileInput, type ProfilesState } from "../profiles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 type Props = {
   state: ProfilesState;
@@ -28,17 +30,12 @@ function messageOf(err: unknown): string {
 
 // Cadastro de perfis de acesso. Appkey, token e senha nunca voltam do servidor: na edição, em branco = manter.
 export function ProfilesDialog({ state, onChange, onClose }: Props) {
-  const dialog = useRef<HTMLDialogElement>(null);
   // `null` = lista; `"new"` = cadastro; senão, o id do perfil em edição.
   const [editing, setEditing] = useState<string | null>(state.profiles.length === 0 ? "new" : null);
   const [form, setForm] = useState<ProfileInput>(EMPTY);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
 
   function startNew() {
     setForm(EMPTY);
@@ -78,7 +75,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
   function field(name: keyof ProfileInput, label: string, options: { secret?: boolean; type?: string } = {}) {
     const isNew = editing === "new";
     return (
-      <label className="flex flex-col gap-1">
+      <Label className="flex-col items-stretch gap-1">
         <span className="label">{label}</span>
         <Input
           type={options.type ?? (options.secret ? "password" : "text")}
@@ -88,31 +85,23 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
           value={form[name]}
           onChange={(event) => setForm({ ...form, [name]: event.target.value })}
         />
-      </label>
+      </Label>
     );
   }
 
   return (
-    <dialog
-      ref={dialog}
-      onClose={onClose}
-      onClick={(event) => event.target === dialog.current && dialog.current.close()}
-      className="m-auto w-[min(36rem,95vw)] rounded-lg border border-zinc-700 bg-zinc-900 p-0 text-zinc-100 backdrop:bg-black/60"
-    >
-      <div className="flex flex-col gap-3 p-4">
-        <div className="flex items-center gap-2">
-          <h2 className="label">Perfis de acesso</h2>
-          <Button variant="ghost" size="xs" type="button" className="ml-auto" aria-label="Fechar" onClick={() => dialog.current?.close()}>
-            ✕
-          </Button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex flex-col gap-3 sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="label">Perfis de acesso</DialogTitle>
+        </DialogHeader>
         {error && <p className="text-xs text-red-400">{error}</p>}
 
         {editing === null ? (
           <>
             <ul className="flex flex-col gap-1">
               {state.profiles.map((profile) => (
-                <li key={profile.id} className="flex items-center gap-2 rounded px-2 py-1 hover:bg-zinc-800">
+                <li key={profile.id} className="flex items-center gap-2 rounded px-2 py-1 hover:bg-accent">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-sm">
                       {profile.name}
@@ -120,7 +109,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                         <Badge className="h-4 rounded bg-emerald-500/15 px-1.5 text-[10px] uppercase text-emerald-300">ativo</Badge>
                       )}
                     </div>
-                    <div className="truncate text-xs text-zinc-400">
+                    <div className="truncate text-xs text-muted-foreground">
                       {profile.username} · {profile.baseUrl}
                     </div>
                   </div>
@@ -161,7 +150,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                 </li>
               ))}
               {state.profiles.length === 0 && (
-                <li className="px-2 py-1 text-xs text-zinc-500">Nenhum perfil cadastrado.</li>
+                <li className="px-2 py-1 text-xs text-muted-foreground">Nenhum perfil cadastrado.</li>
               )}
             </ul>
             <Button variant="outline" size="sm" type="button" className="self-start" onClick={startNew}>
@@ -188,7 +177,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
             </div>
           </form>
         )}
-      </div>
-    </dialog>
+      </DialogContent>
+    </Dialog>
   );
 }

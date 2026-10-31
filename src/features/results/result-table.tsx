@@ -19,6 +19,14 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import type { QueryResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type ResultRow = unknown[];
 
@@ -132,7 +140,7 @@ export function ResultTable({ result }: { result: QueryResult }) {
   const hasFilters = Boolean(table.state.globalFilter) || table.state.columnFilters.length > 0;
 
   return (
-    <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col gap-2 bg-zinc-950 p-4" : "flex min-w-0 flex-col gap-2"}>
+    <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col gap-2 bg-background p-4" : "flex min-w-0 flex-col gap-2"}>
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <Input
           aria-label="Buscar em todas as colunas"
@@ -162,26 +170,27 @@ export function ResultTable({ result }: { result: QueryResult }) {
         <Button variant="ghost" size="xs" type="button" aria-pressed={fullscreen} onClick={() => setFullscreen((value) => !value)}>
           {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
         </Button>
-        <details className="relative">
-          <summary className="btn-ghost cursor-pointer select-none list-none">
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="xs" type="button" />}>
             Colunas ({visibleColumns.length}/{result.columns.length})
-          </summary>
-          <div className="absolute right-0 z-20 mt-1 flex max-h-72 w-60 flex-col gap-1 overflow-auto rounded border border-zinc-700 bg-zinc-900 p-2 shadow-lg">
-            <Button variant="ghost" size="xs" type="button" className="self-start" onClick={() => table.toggleAllColumnsVisible(true)}>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-72 w-60">
+            <DropdownMenuItem closeOnClick={false} onClick={() => table.toggleAllColumnsVisible(true)}>
               mostrar todas
-            </Button>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             {table.getAllLeafColumns().map((column) => (
-              <label key={column.id} className="flex items-center gap-2 font-mono text-zinc-300">
-                <input
-                  type="checkbox"
-                  checked={column.getIsVisible()}
-                  onChange={(event) => column.toggleVisibility(event.target.checked)}
-                />
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                className="font-mono text-xs"
+                checked={column.getIsVisible()}
+                onCheckedChange={(checked) => column.toggleVisibility(checked)}
+              >
                 <span className="truncate">{result.columns[Number(column.id.slice(1))]}</span>
-              </label>
+              </DropdownMenuCheckboxItem>
             ))}
-          </div>
-        </details>
+          </DropdownMenuContent>
+        </DropdownMenu>
         </div>
       </div>
 

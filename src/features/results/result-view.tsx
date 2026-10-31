@@ -7,6 +7,7 @@ import { ResultTable, cellText } from "./result-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Cada resultado ganha uma tabela nova, sem herdar filtros e ordenação do anterior.
 const tableKeys = new WeakMap<QueryResult, number>();
@@ -70,18 +71,12 @@ export function ResultView({ result, error }: Props) {
         <Badge className="bg-emerald-500/15 text-emerald-300">{rows.length} linha(s)</Badge>
         <span className="text-zinc-400">{result.durationMs} ms</span>
         <div className="ml-auto flex items-center gap-2">
-          <div className="flex overflow-hidden rounded border border-zinc-700">
-            {(["table", "json"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={`px-2 py-1 ${view === option ? "bg-zinc-700 text-zinc-50" : "text-zinc-400 hover:bg-zinc-800"}`}
-                onClick={() => setView(option)}
-              >
-                {option === "table" ? "Tabela" : "JSON"}
-              </button>
-            ))}
-          </div>
+          <Tabs value={view} onValueChange={(value) => setView(value as "table" | "json")}>
+            <TabsList>
+              <TabsTrigger value="table">Tabela</TabsTrigger>
+              <TabsTrigger value="json">JSON</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <Button variant="ghost" size="xs" type="button" onClick={copyCsv}>
             {copied ? "Copiado" : "Copiar CSV"}
           </Button>
