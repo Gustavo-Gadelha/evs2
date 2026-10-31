@@ -90,6 +90,11 @@ export async function addHistory(entry: NewHistory): Promise<HistoryItem[]> {
   return listHistory();
 }
 
+export async function removeHistory(id: string): Promise<HistoryItem[]> {
+  await db().historyEntry.deleteMany({ where: { id } });
+  return listHistory();
+}
+
 export async function clearHistory(): Promise<void> {
   await db().historyEntry.deleteMany();
 }

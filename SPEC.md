@@ -46,7 +46,7 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 | `GET /api/sankhya/dictionary/table?table=` | `{ columns, relations }` da tabela, em cache por perfil: colunas de `TDDCAM` (nome, descrição, `TIPCAMPO`, `TAMANHO`) com os valores de domínio de `TDDOPC`, e as ligações liberadas de `TDDLIG` (instâncias de `TDDINS`) com os pares de colunas de `TDDLGC`, vistas dos dois lados; só `SELECT`, 400 `InvalidTable` como em `columns` |
 | `POST /api/sankhya/dictionary/refresh` | Descarta o cache do dicionário do perfil ativo e lê `TDDTAB` de novo no ERP (só `SELECT`); devolve `[{ name, description }]`; as colunas voltam a ser lidas sob demanda |
 | `GET/POST/DELETE /api/history` | Lista (sem o resultado, com `hasResult`), grava (e poda além de 200) e limpa o histórico no Postgres                |
-| `GET /api/history/[id]`    | Entrada completa, com o resultado quando guardado                                                                     |
+| `GET/DELETE /api/history/[id]` | GET: entrada completa, com o resultado quando guardado; DELETE: exclui a entrada e devolve a lista atualizada                                                                     |
 | `GET/POST /api/saved`, `DELETE /api/saved/[id]` | Consultas salvas no Postgres; cada uma devolve a lista atualizada                                  |
 
 `columns` segue `fieldsMetadata` ordenado por `order`; `rows` vem como o Sankhya devolve (mesma regra do `parse_query_result`).
@@ -165,7 +165,7 @@ Três colunas em telas largas; empilhadas em telas estreitas.
   - Nova consulta: botão no topo, acima das consultas salvas, que abre uma aba em branco;
   - Dicionário: botão logo abaixo de Nova consulta, abre o diálogo com busca de tabelas por nome/descrição; a tabela escolhida mostra as colunas (tipo, tamanho, valores de domínio, com filtro) e os relacionamentos, com os botões "Ver 20 linhas" (substitui a consulta por um `SELECT` de 20 linhas da tabela) e "JOIN" em cada relacionamento (acrescenta o JOIN ao builder; exige a tabela no FROM ou num JOIN, via `src/lib/sql/add-join.ts`), com o botão "Atualizar do ERP", que invalida o cache (servidor e navegador) e consulta o dicionário de novo, recarregando também o autocomplete;
   - Consultas salvas: nome + `QueryState` + SQL + se foi editado à mão; no Postgres (as do antigo `localStorage` são importadas uma vez e removidas de lá);
-  - Histórico: as últimas 200 execuções no Postgres, com SQL, estado, linhas, status e horário; `state` e `result` são `jsonb` (a ordem das chaves dos objetos não é preservada); o resultado só é guardado quando tem até 5 MB e sem caractere NUL, que o jsonb não aceita (a listagem não o traz; clicar na entrada o busca); há botão de limpar.
+  - Histórico: as últimas 200 execuções no Postgres, com SQL, estado, linhas, status e horário; `state` e `result` são `jsonb` (a ordem das chaves dos objetos não é preservada); o resultado só é guardado quando tem até 5 MB e sem caractere NUL, que o jsonb não aceita (a listagem não o traz; clicar na entrada o busca); há botão de limpar. Botão direito numa entrada abre o menu: Abrir, Salvar como consulta… (campo de nome inline sob a entrada) e Excluir.
   - Clicar em um item restaura builder, editor e resultado na aba ativa se ela estiver em branco (sem SQL, sem tabela, sem resultado nem erro e sem estar rodando); senão, em uma aba nova.
 
 ## Estrutura

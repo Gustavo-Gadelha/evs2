@@ -52,6 +52,9 @@ export const history = {
     });
   },
 
+  // Exclui uma entrada e devolve a lista atualizada.
+  remove: (id: string) => api<HistoryItem[]>(`/api/history/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
   clear: () => api<HistoryItem[]>("/api/history", { method: "DELETE" }),
 };
 

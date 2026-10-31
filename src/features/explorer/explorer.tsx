@@ -312,6 +312,7 @@ export function Explorer() {
           onLoadHistory={(item) => void loadHistory(item)}
           onLoadSaved={(query) => load(query)}
           onSaveHistory={(name, item) => void persist(savedQueries.save(name, item), setSaved)}
+          onRemoveHistory={(id) => void persist(history.remove(id), setHistoryItems)}
           onRemoveSaved={(id) => void persist(savedQueries.remove(id), setSaved)}
           onClearHistory={() => void persist(history.clear(), setHistoryItems)}
           onNewQuery={newQuery}

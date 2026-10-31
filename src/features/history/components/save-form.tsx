@@ -7,11 +7,15 @@ import { Input } from "@/components/ui/input";
 type Props = {
   label: string;
   onSave: (name: string) => void;
+  // Abre já com o campo de nome (usado pelo menu de contexto do histórico).
+  defaultOpen?: boolean;
+  // Chamado ao salvar ou cancelar com Escape.
+  onDone?: () => void;
 };
 
 // Botão que vira um campo de nome inline para salvar uma consulta.
-export function SaveForm({ label, onSave }: Props) {
-  const [open, setOpen] = useState(false);
+export function SaveForm({ label, onSave, defaultOpen = false, onDone }: Props) {
+  const [open, setOpen] = useState(defaultOpen);
   const [name, setName] = useState("");
 
   if (!open) {
@@ -28,6 +32,7 @@ export function SaveForm({ label, onSave }: Props) {
     onSave(trimmed);
     setName("");
     setOpen(false);
+    onDone?.();
   }
 
   return (
@@ -44,7 +49,11 @@ export function SaveForm({ label, onSave }: Props) {
         placeholder="nome da consulta"
         value={name}
         onChange={(event) => setName(event.target.value)}
-        onKeyDown={(event) => event.key === "Escape" && setOpen(false)}
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
+          setOpen(false);
+          onDone?.();
+        }}
       />
       <Button variant="outline" size="sm" type="submit" disabled={!name.trim()}>
         Salvar

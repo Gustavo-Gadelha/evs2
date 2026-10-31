@@ -2,9 +2,17 @@
 
 import { MAX_HISTORY, type HistoryItem, type SavedQuery } from "../history";
 import { SaveForm } from "./save-form";
+import { useState } from "react";
 import { BookOpenIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 type Props = {
   history: HistoryItem[];
@@ -12,6 +20,7 @@ type Props = {
   onLoadHistory: (entry: HistoryItem) => void;
   onLoadSaved: (query: SavedQuery) => void;
   onSaveHistory: (name: string, entry: HistoryItem) => void;
+  onRemoveHistory: (id: string) => void;
   onRemoveSaved: (id: string) => void;
   onClearHistory: () => void;
   onNewQuery: () => void;
@@ -36,7 +45,10 @@ function ItemButton({ label, title, onClick }: { label: string; title?: string; 
 }
 
 export function Sidebar(props: Props) {
-  const { history, saved, onLoadHistory, onLoadSaved, onSaveHistory, onRemoveSaved, onClearHistory, onNewQuery, onOpenDictionary } = props;
+  const { history, saved, onLoadHistory, onLoadSaved, onSaveHistory, onRemoveHistory, onRemoveSaved, onClearHistory, onNewQuery, onOpenDictionary } = props;
+
+  // Entrada do histórico cujo nome de consulta está sendo digitado (aberto pelo menu de contexto).
+  const [naming, setNaming] = useState<string | null>(null);
 
   return (
     <aside className="flex flex-col gap-6 border-border p-4 lg:row-span-2 lg:border-r xl:row-span-1">
@@ -82,21 +94,40 @@ export function Sidebar(props: Props) {
         {history.length === 0 && <p className="text-xs text-muted-foreground">Vazio.</p>}
         <ul className="flex flex-col gap-1">
           {history.map((entry) => (
-            <li key={entry.id} className="rounded hover:bg-accent">
-              <button type="button" className="w-full px-2 pt-1 text-left" title={entry.sql} onClick={() => onLoadHistory(entry)}>
-                <div className="flex items-center gap-2 font-mono text-xs">
-                  {entry.error === null ? (
-                    <span className="text-emerald-400">{entry.rowCount} linha(s)</span>
-                  ) : (
-                    <span className="text-destructive">erro</span>
-                  )}
-                  <span className="ml-auto text-muted-foreground">{new Date(entry.timestamp).toLocaleTimeString("pt-BR")}</span>
+            <li key={entry.id}>
+              <ContextMenu>
+                <ContextMenuTrigger className="block rounded hover:bg-accent">
+                  <button type="button" className="w-full px-2 py-1 text-left" title={entry.sql} onClick={() => onLoadHistory(entry)}>
+                    <div className="flex items-center gap-2 font-mono text-xs">
+                      {entry.error === null ? (
+                        <span className="text-emerald-400">{entry.rowCount} linha(s)</span>
+                      ) : (
+                        <span className="text-destructive">erro</span>
+                      )}
+                      <span className="ml-auto text-muted-foreground">{new Date(entry.timestamp).toLocaleTimeString("pt-BR")}</span>
+                    </div>
+                    <div className="truncate font-mono text-xs text-foreground">{oneLine(entry.sql)}</div>
+                  </button>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => onLoadHistory(entry)}>Abrir</ContextMenuItem>
+                  <ContextMenuItem onClick={() => setNaming(entry.id)}>Salvar como consulta…</ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem variant="destructive" onClick={() => onRemoveHistory(entry.id)}>
+                    Excluir
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+              {naming === entry.id && (
+                <div className="px-2 pb-1">
+                  <SaveForm
+                    label="salvar como consulta"
+                    defaultOpen
+                    onSave={(name) => onSaveHistory(name, entry)}
+                    onDone={() => setNaming(null)}
+                  />
                 </div>
-                <div className="truncate font-mono text-xs text-foreground">{oneLine(entry.sql)}</div>
-              </button>
-              <div className="px-2 pb-1">
-                <SaveForm label="salvar como consulta" onSave={(name) => onSaveHistory(name, entry)} />
-              </div>
+              )}
             </li>
           ))}
         </ul>
