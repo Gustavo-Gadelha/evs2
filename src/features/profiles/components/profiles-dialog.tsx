@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { profiles as api, type Profile, type ProfileInput, type ProfilesState } from "../profiles";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   state: ProfilesState;
@@ -77,8 +79,7 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
     return (
       <label className="flex flex-col gap-1">
         <span className="label">{label}</span>
-        <input
-          className="input"
+        <Input
           type={options.type ?? (options.secret ? "password" : "text")}
           autoComplete="off"
           required={isNew || !options.secret}
@@ -100,9 +101,9 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
       <div className="flex flex-col gap-3 p-4">
         <div className="flex items-center gap-2">
           <h2 className="label">Perfis de acesso</h2>
-          <button type="button" className="btn-ghost ml-auto" aria-label="Fechar" onClick={() => dialog.current?.close()}>
+          <Button variant="ghost" size="xs" type="button" className="ml-auto" aria-label="Fechar" onClick={() => dialog.current?.close()}>
             ✕
-          </button>
+          </Button>
         </div>
         {error && <p className="text-xs text-red-400">{error}</p>}
 
@@ -126,36 +127,36 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                   </div>
                   {confirmDelete === profile.id ? (
                     <>
-                      <button
+                      <Button
+                        variant="outline" size="sm"
                         type="button"
-                        className="btn"
                         disabled={busy}
                         onClick={() => void run(() => api.remove(profile.id), () => setConfirmDelete(null))}
                       >
                         Confirmar exclusão
-                      </button>
-                      <button type="button" className="btn" onClick={() => setConfirmDelete(null)}>
+                      </Button>
+                      <Button variant="outline" size="sm" type="button" onClick={() => setConfirmDelete(null)}>
                         Cancelar
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>
                       {profile.id !== state.activeId && (
-                        <button
+                        <Button
+                          variant="outline" size="sm"
                           type="button"
-                          className="btn"
                           disabled={busy}
                           onClick={() => void run(() => api.activate(profile.id))}
                         >
                           Usar
-                        </button>
+                        </Button>
                       )}
-                      <button type="button" className="btn" onClick={() => startEdit(profile)}>
+                      <Button variant="outline" size="sm" type="button" onClick={() => startEdit(profile)}>
                         Editar
-                      </button>
-                      <button type="button" className="btn" onClick={() => setConfirmDelete(profile.id)}>
+                      </Button>
+                      <Button variant="outline" size="sm" type="button" onClick={() => setConfirmDelete(profile.id)}>
                         Excluir
-                      </button>
+                      </Button>
                     </>
                   )}
                 </li>
@@ -164,9 +165,9 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
                 <li className="px-2 py-1 text-xs text-zinc-500">Nenhum perfil cadastrado.</li>
               )}
             </ul>
-            <button type="button" className="btn self-start" onClick={startNew}>
+            <Button variant="outline" size="sm" type="button" className="self-start" onClick={startNew}>
               Novo perfil
-            </button>
+            </Button>
           </>
         ) : (
           <form className="flex flex-col gap-3" onSubmit={submit}>
@@ -177,13 +178,13 @@ export function ProfilesDialog({ state, onChange, onClose }: Props) {
             {field("username", "Usuário")}
             {field("password", "Senha", { secret: true })}
             <div className="flex gap-2">
-              <button type="submit" className="btn" disabled={busy}>
+              <Button variant="outline" size="sm" type="submit" disabled={busy}>
                 Salvar
-              </button>
+              </Button>
               {(state.profiles.length > 0 || editing !== "new") && (
-                <button type="button" className="btn" onClick={() => setEditing(null)}>
+                <Button variant="outline" size="sm" type="button" onClick={() => setEditing(null)}>
                   Cancelar
-                </button>
+                </Button>
               )}
             </div>
           </form>

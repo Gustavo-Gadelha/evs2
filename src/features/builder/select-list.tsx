@@ -3,22 +3,25 @@
 import { AGG_FNS, type AggExpr, type AggFn, type Expr, type QueryState, type SelectItem } from "@/lib/sql/query-state";
 import { ExprInput } from "./expr-input";
 import { EditableList } from "./editable-list";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
 function AggEditor({ expr, onChange }: { expr: AggExpr; onChange: (expr: Expr) => void }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1.5">
-      <select
+      <NativeSelect
+        size="sm"
         aria-label="Agregação"
-        className="input font-semibold"
+        className="font-semibold"
         value={expr.fn}
         onChange={(event) => onChange({ ...expr, fn: event.target.value as AggFn })}
       >
         {AGG_FNS.map((fn) => (
           <option key={fn}>{fn}</option>
         ))}
-      </select>
+      </NativeSelect>
       <label className="flex items-center gap-1 text-xs text-zinc-400">
         <input
           type="checkbox"
@@ -69,10 +72,10 @@ export function SelectClause({ state, onChange }: Props) {
             ) : (
               <AggEditor expr={item.expr} onChange={(expr) => update({ expr })} />
             )}
-            <input
+            <Input
               aria-label="Alias da coluna"
               spellCheck={false}
-              className="input w-28 font-mono"
+              className="w-28 font-mono"
               placeholder="alias"
               value={item.alias ?? ""}
               onChange={(event) => update({ alias: event.target.value })}

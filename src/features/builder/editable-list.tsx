@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { move, removeAt, replaceAt } from "./list";
 import { RowActions } from "./row-actions";
 import { SortableList } from "./sortable-list";
+import { Button } from "@/components/ui/button";
 
 type Props<T extends { off?: boolean }> = {
   items: T[];
@@ -58,9 +59,9 @@ export function EditableList<T extends { off?: boolean }>({
       </SortableList>
       <div className="flex gap-2">
         {add.map(({ label, make }) => (
-          <button key={label} type="button" className="btn-ghost" onClick={() => onChange([...items, make()])}>
+          <Button variant="ghost" size="xs" key={label} type="button" onClick={() => onChange([...items, make()])}>
             {label}
-          </button>
+          </Button>
         ))}
       </div>
     </>

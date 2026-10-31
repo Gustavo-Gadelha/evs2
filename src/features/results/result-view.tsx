@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import type { QueryResult } from "@/lib/types";
 import { ResultTable, cellText } from "./result-table";
+import { Button } from "@/components/ui/button";
 
 // Cada resultado ganha uma tabela nova, sem herdar filtros e ordenação do anterior.
 const tableKeys = new WeakMap<QueryResult, number>();
@@ -79,9 +80,9 @@ export function ResultView({ result, error }: Props) {
               </button>
             ))}
           </div>
-          <button type="button" className="btn-ghost" onClick={copyCsv}>
+          <Button variant="ghost" size="xs" type="button" onClick={copyCsv}>
             {copied ? "Copiado" : "Copiar CSV"}
-          </button>
+          </Button>
         </div>
       </div>
 

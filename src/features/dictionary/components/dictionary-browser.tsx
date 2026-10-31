@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { loadColumns, loadTables } from "../client";
 import { normalize } from "../search";
 import type { DictionaryEntry } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const MAX_ROWS = 300;
 
@@ -94,16 +96,15 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-2">
           <h2 className="label">Dicionário do Sankhya</h2>
           {tables && <span className="text-xs text-zinc-500">{tables.length} tabelas</span>}
-          <button type="button" className="btn-ghost ml-auto" aria-label="Fechar" onClick={() => dialog.current?.close()}>
+          <Button variant="ghost" size="xs" type="button" className="ml-auto" aria-label="Fechar" onClick={() => dialog.current?.close()}>
             ✕
-          </button>
+          </Button>
         </div>
         {error && <p className="text-xs text-red-400">{error}</p>}
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
           <section className="flex min-h-0 flex-col gap-2">
-            <input
+            <Input
               autoFocus
-              className="input"
               placeholder="Buscar tabela por nome ou descrição"
               value={tableQuery}
               onChange={(event) => setTableQuery(event.target.value)}
@@ -117,8 +118,7 @@ export function DictionaryBrowser({ onClose }: { onClose: () => void }) {
             </div>
           </section>
           <section className="flex min-h-0 flex-col gap-2">
-            <input
-              className="input"
+            <Input
               placeholder={selected ? `Buscar coluna em ${selected}` : "Escolha uma tabela"}
               disabled={!selected}
               value={columnQuery}

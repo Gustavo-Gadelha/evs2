@@ -9,6 +9,7 @@ import { ExprInput } from "./expr-input";
 import { move, removeAt, replaceAt } from "./list";
 import { RowActions } from "./row-actions";
 import { SortableList } from "./sortable-list";
+import { Button } from "@/components/ui/button";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
@@ -69,13 +70,14 @@ export function GroupByClause({ state, onChange }: Props) {
               </div>
             )}
           </SortableList>
-          <button
+          <Button
+            variant="ghost" size="xs"
             type="button"
-            className="btn-ghost self-start"
+            className="self-start"
             onClick={() => setExprs([...exprs, ""], [...ids.current, crypto.randomUUID()])}
           >
             + expressão
-          </button>
+          </Button>
         </>
       )}
     </>

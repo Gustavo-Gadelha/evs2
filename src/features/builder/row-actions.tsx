@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 type Props = {
   index: number;
   count: number;
@@ -11,39 +13,43 @@ type Props = {
 export function RowActions({ index, count, onMove, onRemove, off, onToggleOff }: Props) {
   return (
     <div className="flex shrink-0">
-      <button
+      <Button
+        variant="ghost"
+        size="icon-xs"
         type="button"
-        className="btn-ghost"
         aria-label="Mover para cima"
         disabled={index === 0}
         onClick={() => onMove(index - 1)}
       >
         ↑
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-xs"
         type="button"
-        className="btn-ghost"
         aria-label="Mover para baixo"
         disabled={index === count - 1}
         onClick={() => onMove(index + 1)}
       >
         ↓
-      </button>
+      </Button>
       {onToggleOff && (
-        <button
+        <Button
+          variant="ghost"
+          size="icon-xs"
           type="button"
-          className={`btn-ghost ${off ? "text-amber-300" : ""}`}
+          className={off ? "text-amber-300" : undefined}
           aria-label={off ? "Incluir no SQL" : "Omitir do SQL"}
           aria-pressed={off ?? false}
           title={off ? "Omitida do SQL: clique para incluir" : "Omitir do SQL sem remover"}
           onClick={onToggleOff}
         >
           {off ? "⊘" : "◉"}
-        </button>
+        </Button>
       )}
-      <button type="button" className="btn-ghost" aria-label="Remover" onClick={onRemove}>
+      <Button variant="ghost" size="icon-xs" type="button" aria-label="Remover" onClick={onRemove}>
         ✕
-      </button>
+      </Button>
     </div>
   );
 }

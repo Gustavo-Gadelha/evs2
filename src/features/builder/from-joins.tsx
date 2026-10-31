@@ -5,6 +5,7 @@ import { CondGroupEditor } from "./cond-group";
 import { Combobox } from "@/components/combobox";
 import { useDictionary } from "@/features/dictionary/components/dictionary-provider";
 import { EditableList } from "./editable-list";
+import { NativeSelect } from "@/components/ui/native-select";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
@@ -67,16 +68,16 @@ export function JoinsClause({ state, onChange }: Props) {
       add={[{ label: "+ join", make: newJoin }]}
       renderRow={(join, _, update) => (
         <>
-          <select
+          <NativeSelect
+            size="sm"
             aria-label="Tipo de join"
-            className="input"
             value={join.type}
             onChange={(event) => update({ type: event.target.value as JoinType })}
           >
             {JOIN_TYPES.map((type) => (
               <option key={type}>{type}</option>
             ))}
-          </select>
+          </NativeSelect>
           <IdentInput
             label="Tabela do join"
             suggest

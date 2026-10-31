@@ -1,5 +1,7 @@
 import type { Profile } from "@/features/profiles/profiles";
 import type { AuthStatus } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { NativeSelect } from "@/components/ui/native-select";
 
 type Props = {
   status: AuthStatus | null;
@@ -35,9 +37,10 @@ export function AuthHeader({
       <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-300">
         local · dev-only
       </span>
-      <select
+      <NativeSelect
+        size="sm"
         aria-label="Perfil de acesso"
-        className="input w-auto max-w-48"
+        className="w-auto max-w-48"
         value={activeId ?? ""}
         disabled={busy || profiles.length === 0}
         onChange={(event) => onSelectProfile(event.target.value || null)}
@@ -48,20 +51,20 @@ export function AuthHeader({
             {profile.name}
           </option>
         ))}
-      </select>
-      <button type="button" className="btn" onClick={onOpenProfiles}>
+      </NativeSelect>
+      <Button variant="outline" size="sm" type="button" onClick={onOpenProfiles}>
         Perfis
-      </button>
+      </Button>
       <code className="min-w-0 truncate text-xs text-zinc-400">
         {status?.baseUrl ?? (status ? "nenhum perfil ativo" : "…")}
       </code>
 
-      <button type="button" className="btn" onClick={onNewQuery}>
+      <Button variant="outline" size="sm" type="button" onClick={onNewQuery}>
         Nova consulta
-      </button>
-      <button type="button" className="btn" onClick={onOpenDictionary}>
+      </Button>
+      <Button variant="outline" size="sm" type="button" onClick={onOpenDictionary}>
         Dicionário
-      </button>
+      </Button>
 
       <div className="ml-auto flex items-center gap-3">
         <span className="flex items-center gap-2 text-xs text-zinc-300">
@@ -73,12 +76,12 @@ export function AuthHeader({
             ? `Autenticado às ${new Date(status!.authenticatedAt!).toLocaleTimeString("pt-BR")}`
             : "Sem sessão (login automático na 1ª requisição)"}
         </span>
-        <button type="button" className="btn" disabled={busy || !hasProfile} onClick={onLogin}>
+        <Button variant="outline" size="sm" type="button" disabled={busy || !hasProfile} onClick={onLogin}>
           {authenticated ? "Relogar" : "Login"}
-        </button>
-        <button type="button" className="btn" disabled={busy || !authenticated} onClick={onLogout}>
+        </Button>
+        <Button variant="outline" size="sm" type="button" disabled={busy || !authenticated} onClick={onLogout}>
           Logout
-        </button>
+        </Button>
       </div>
     </header>
   );

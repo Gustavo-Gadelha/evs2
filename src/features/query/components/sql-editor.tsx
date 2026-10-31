@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { SaveForm } from "@/features/history/components/save-form";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 type Props = {
   sql: string;
@@ -44,9 +46,9 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
           (confirming ? (
             <span className="flex items-center gap-1 text-xs text-zinc-300">
               Descartar a edição?
-              <button
+              <Button
+                variant="outline" size="sm"
                 type="button"
-                className="btn"
                 disabled={!canRegenerate}
                 title={canRegenerate ? undefined : "Corrija os problemas do builder primeiro"}
                 onClick={() => {
@@ -55,31 +57,31 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
                 }}
               >
                 Sim, regenerar
-              </button>
-              <button type="button" className="btn-ghost" onClick={() => setConfirming(false)}>
+              </Button>
+              <Button variant="ghost" size="xs" type="button" onClick={() => setConfirming(false)}>
                 Cancelar
-              </button>
+              </Button>
             </span>
           ) : (
-            <button type="button" className="btn-ghost" onClick={() => setConfirming(true)}>
+            <Button variant="ghost" size="xs" type="button" onClick={() => setConfirming(true)}>
               ↺ regenerar do builder
-            </button>
+            </Button>
           ))}
         <div className="ml-auto flex items-center gap-2">
           <SaveForm label="Salvar consulta" onSave={onSave} />
-          <button type="button" className="btn-ghost" disabled={!sql} onClick={copy}>
+          <Button variant="ghost" size="xs" type="button" disabled={!sql} onClick={copy}>
             {copied ? "Copiado" : "Copiar"}
-          </button>
-          <button type="button" className="btn-primary" disabled={running || !check.ok} onClick={onRun}>
+          </Button>
+          <Button size="default" type="button" disabled={running || !check.ok} onClick={onRun}>
             {running ? "Rodando…" : "Rodar"}
             <kbd className="ml-2 hidden text-[10px] opacity-70 sm:inline">Ctrl+Enter</kbd>
-          </button>
+          </Button>
         </div>
       </div>
-      <textarea
+      <Textarea
         aria-label="SQL"
         spellCheck={false}
-        className="input min-h-64 resize-y font-mono text-xs leading-relaxed"
+        className="min-h-64 resize-y font-mono text-xs leading-relaxed"
         placeholder="Monte a consulta no builder ou escreva o SQL aqui."
         value={sql}
         onChange={(event) => onChange(event.target.value)}

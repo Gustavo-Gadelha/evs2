@@ -47,7 +47,7 @@ export function ExprInput({ label, value, onChange, placeholder, className = "" 
       <select
         aria-label={`Inserir função Oracle em ${label}`}
         title="Inserir função Oracle"
-        className="input w-9 shrink-0 rounded-l-none border-l-0 px-1 text-center"
+        className="h-8 w-9 shrink-0 appearance-none rounded-lg rounded-l-none border border-l-0 border-input bg-transparent px-1 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         value=""
         onChange={(event) => {
           const fn = ORACLE_FUNCTIONS.find((item) => item.label === event.target.value);

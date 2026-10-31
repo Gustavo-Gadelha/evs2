@@ -19,6 +19,9 @@ import { ExprInput } from "./expr-input";
 import { idOf, inherit, move, removeAt, replaceAt } from "./list";
 import { SortableRow } from "./sortable-list";
 import { RowActions } from "./row-actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const MAX_DEPTH = 3;
 const KIND_LABELS: Record<ValueKind, string> = { text: "texto", number: "número", date: "data", expr: "expressão" };
@@ -114,21 +117,21 @@ function CondRow({ cond, onChange }: { cond: Cond; onChange: (cond: Cond) => voi
         value={cond.left}
         onChange={(left) => onChange({ ...cond, left })}
       />
-      <select
+      <NativeSelect
+        size="sm"
         aria-label="Operador"
-        className="input"
         value={cond.op}
         onChange={(event) => onChange({ ...cond, op: event.target.value as CondOp })}
       >
         {COND_OPS.map((op) => (
           <option key={op}>{op}</option>
         ))}
-      </select>
+      </NativeSelect>
       {!NO_VALUE_OPS.includes(cond.op) && (
         <>
-          <select
+          <NativeSelect
+            size="sm"
             aria-label="Tipo do valor"
-            className="input"
             value={right.kind}
             onChange={(event) => setRight({ kind: event.target.value as ValueKind })}
           >
@@ -137,22 +140,22 @@ function CondRow({ cond, onChange }: { cond: Cond; onChange: (cond: Cond) => voi
                 {KIND_LABELS[kind]}
               </option>
             ))}
-          </select>
-          <input
+          </NativeSelect>
+          <Input
             aria-label="Valor"
             type={inputType}
             spellCheck={false}
-            className="input min-w-24 flex-1 font-mono"
+            className="min-w-24 flex-1 font-mono"
             placeholder={valuePlaceholder(cond)}
             value={right.value}
             onChange={(event) => setRight({ value: event.target.value })}
           />
           {cond.op === "BETWEEN" && (
-            <input
+            <Input
               aria-label="Segundo valor"
               type={inputType}
               spellCheck={false}
-              className="input min-w-24 flex-1 font-mono"
+              className="min-w-24 flex-1 font-mono"
               placeholder="até"
               value={right.value2 ?? ""}
               onChange={(event) => setRight({ value2: event.target.value })}
@@ -216,27 +219,27 @@ function GroupBody({ group, onChange, depth = 0, onRemove, onToggleOff, rootId, 
             </button>
           ))}
         </div>
-        <button type="button" className="btn-ghost" onClick={() => setItems([...group.items, emptyCond()])}>
+        <Button variant="ghost" size="xs" type="button" onClick={() => setItems([...group.items, emptyCond()])}>
           + condição
-        </button>
+        </Button>
         {depth < MAX_DEPTH && (
-          <button
+          <Button
+            variant="ghost" size="xs"
             type="button"
-            className="btn-ghost"
             onClick={() => setItems([...group.items, emptyGroup(group.op === "AND" ? "OR" : "AND")])}
           >
             + grupo
-          </button>
+          </Button>
         )}
         {onToggleOff && (
-          <button type="button" className={`btn-ghost ml-auto ${group.off ? "text-amber-300" : ""}`} onClick={onToggleOff}>
+          <Button variant="ghost" size="xs" type="button" className={`ml-auto ${group.off ? "text-amber-300" : ""}`} onClick={onToggleOff}>
             {group.off ? "incluir grupo" : "omitir grupo"}
-          </button>
+          </Button>
         )}
         {onRemove && (
-          <button type="button" className={`btn-ghost ${onToggleOff ? "" : "ml-auto"}`} onClick={onRemove}>
+          <Button variant="ghost" size="xs" type="button" className={`${onToggleOff ? "" : "ml-auto"}`} onClick={onRemove}>
             remover grupo
-          </button>
+          </Button>
         )}
       </div>
 

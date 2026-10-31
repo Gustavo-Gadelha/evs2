@@ -2,6 +2,7 @@
 
 import { MAX_HISTORY, type HistoryItem, type SavedQuery } from "../history";
 import { SaveForm } from "./save-form";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   history: HistoryItem[];
@@ -42,14 +43,15 @@ export function Sidebar(props: Props) {
           {saved.map((query) => (
             <li key={query.id} className="group flex items-center gap-1">
               <ItemButton label={query.name} title={query.sql} onClick={() => onLoadSaved(query)} />
-              <button
+              <Button
+                variant="ghost" size="xs"
                 type="button"
-                className="btn-ghost opacity-0 group-hover:opacity-100 focus:opacity-100"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100"
                 aria-label={`Excluir ${query.name}`}
                 onClick={() => onRemoveSaved(query.id)}
               >
                 ✕
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -58,9 +60,9 @@ export function Sidebar(props: Props) {
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <h2 className="label">Histórico ({history.length}/{MAX_HISTORY})</h2>
-          <button type="button" className="btn-ghost" disabled={history.length === 0} onClick={onClearHistory}>
+          <Button variant="ghost" size="xs" type="button" disabled={history.length === 0} onClick={onClearHistory}>
             Limpar
-          </button>
+          </Button>
         </div>
         {history.length === 0 && <p className="text-xs text-zinc-500">Vazio.</p>}
         <ul className="flex flex-col gap-1">

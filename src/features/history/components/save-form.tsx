@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   label: string;
@@ -14,9 +16,9 @@ export function SaveForm({ label, onSave }: Props) {
 
   if (!open) {
     return (
-      <button type="button" className="btn-ghost" onClick={() => setOpen(true)}>
+      <Button variant="ghost" size="xs" type="button" onClick={() => setOpen(true)}>
         {label}
-      </button>
+      </Button>
     );
   }
 
@@ -36,17 +38,17 @@ export function SaveForm({ label, onSave }: Props) {
         submit();
       }}
     >
-      <input
+      <Input
         autoFocus
-        className="input w-40"
+        className="w-40"
         placeholder="nome da consulta"
         value={name}
         onChange={(event) => setName(event.target.value)}
         onKeyDown={(event) => event.key === "Escape" && setOpen(false)}
       />
-      <button type="submit" className="btn" disabled={!name.trim()}>
+      <Button variant="outline" size="sm" type="submit" disabled={!name.trim()}>
         Salvar
-      </button>
+      </Button>
     </form>
   );
 }

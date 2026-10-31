@@ -17,6 +17,8 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import type { QueryResult } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type ResultRow = unknown[];
 
@@ -132,24 +134,24 @@ export function ResultTable({ result }: { result: QueryResult }) {
   return (
     <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col gap-2 bg-zinc-950 p-4" : "flex min-w-0 flex-col gap-2"}>
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <input
+        <Input
           aria-label="Buscar em todas as colunas"
-          className="input w-56"
+          className="w-56"
           placeholder="Buscar em todas as colunas"
           value={table.state.globalFilter ?? ""}
           onChange={(event) => table.setGlobalFilter(event.target.value)}
         />
         {hasFilters && (
-          <button
+          <Button
+            variant="ghost" size="xs"
             type="button"
-            className="btn-ghost"
             onClick={() => {
               table.setGlobalFilter("");
               table.resetColumnFilters(true);
             }}
           >
             limpar filtros
-          </button>
+          </Button>
         )}
         {filtered && (
           <span className="text-zinc-400">
@@ -157,17 +159,17 @@ export function ResultTable({ result }: { result: QueryResult }) {
           </span>
         )}
         <div className="ml-auto flex items-center gap-1">
-        <button type="button" className="btn-ghost" aria-pressed={fullscreen} onClick={() => setFullscreen((value) => !value)}>
+        <Button variant="ghost" size="xs" type="button" aria-pressed={fullscreen} onClick={() => setFullscreen((value) => !value)}>
           {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
-        </button>
+        </Button>
         <details className="relative">
           <summary className="btn-ghost cursor-pointer select-none list-none">
             Colunas ({visibleColumns.length}/{result.columns.length})
           </summary>
           <div className="absolute right-0 z-20 mt-1 flex max-h-72 w-60 flex-col gap-1 overflow-auto rounded border border-zinc-700 bg-zinc-900 p-2 shadow-lg">
-            <button type="button" className="btn-ghost self-start" onClick={() => table.toggleAllColumnsVisible(true)}>
+            <Button variant="ghost" size="xs" type="button" className="self-start" onClick={() => table.toggleAllColumnsVisible(true)}>
               mostrar todas
-            </button>
+            </Button>
             {table.getAllLeafColumns().map((column) => (
               <label key={column.id} className="flex items-center gap-2 font-mono text-zinc-300">
                 <input
@@ -223,9 +225,9 @@ export function ResultTable({ result }: { result: QueryResult }) {
               <th className="shrink-0 border-b border-zinc-800" style={{ width: numberWidth }} />
               {visibleColumns.map((column) => (
                 <th key={column.id} className="shrink-0 border-b border-zinc-800 p-1" style={{ width: widthOf(column.id) }}>
-                  <input
+                  <Input
                     aria-label={`Filtrar ${result.columns[Number(column.id.slice(1))]}`}
-                    className="input w-full px-1.5 py-0.5 text-xs font-normal"
+                    className="h-6 w-full px-1.5 py-0.5 text-xs font-normal md:text-xs"
                     placeholder="filtrar"
                     value={(column.getFilterValue() as string | undefined) ?? ""}
                     onChange={(event) => column.setFilterValue(event.target.value)}

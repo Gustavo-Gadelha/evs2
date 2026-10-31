@@ -3,6 +3,8 @@
 import { DEFAULT_LIMIT, type Limit, type OrderItem, type QueryState } from "@/lib/sql/query-state";
 import { ExprInput } from "./expr-input";
 import { EditableList } from "./editable-list";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
@@ -22,25 +24,25 @@ export function OrderByClause({ state, onChange }: Props) {
             value={item.expr}
             onChange={(expr) => update({ expr })}
           />
-          <select
+          <NativeSelect
+            size="sm"
             aria-label="Direção"
-            className="input"
             value={item.dir}
             onChange={(event) => update({ dir: event.target.value as OrderItem["dir"] })}
           >
             <option>ASC</option>
             <option>DESC</option>
-          </select>
-          <select
+          </NativeSelect>
+          <NativeSelect
+            size="sm"
             aria-label="Posição dos nulos"
-            className="input"
             value={item.nulls ?? ""}
             onChange={(event) => update({ nulls: (event.target.value || undefined) as OrderItem["nulls"] })}
           >
             <option value="">nulos: padrão</option>
             <option value="FIRST">NULLS FIRST</option>
             <option value="LAST">NULLS LAST</option>
-          </select>
+          </NativeSelect>
         </>
       )}
     />
@@ -56,33 +58,33 @@ export function LimitClause({ state, onChange }: Props) {
     <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-300">
       <label className="flex items-center gap-1.5">
         linhas
-        <input
+        <Input
           type="number"
           min={1}
-          className="input w-24"
+          className="w-24"
           value={Number.isFinite(limit.rows) ? limit.rows : ""}
           onChange={(event) => setLimit({ rows: event.target.valueAsNumber })}
         />
       </label>
       <label className="flex items-center gap-1.5">
         offset
-        <input
+        <Input
           type="number"
           min={0}
-          className="input w-24"
+          className="w-24"
           value={Number.isFinite(limit.offset) ? limit.offset : ""}
           onChange={(event) => setLimit({ offset: event.target.valueAsNumber })}
         />
       </label>
-      <select
+      <NativeSelect
+        size="sm"
         aria-label="Estilo do limite"
-        className="input"
         value={limit.style}
         onChange={(event) => setLimit({ style: event.target.value as Limit["style"] })}
       >
         <option value="fetch">FETCH NEXT (Oracle 12c+)</option>
         <option value="rownum">ROWNUM (Oracle 11g)</option>
-      </select>
+      </NativeSelect>
     </div>
   );
 }
