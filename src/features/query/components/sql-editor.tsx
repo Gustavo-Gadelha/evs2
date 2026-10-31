@@ -27,7 +27,8 @@ export function SqlEditor({ sql, manual, running, canRegenerate, onChange, onReg
   const schema = useSqlSchema(sql);
 
   return (
-    <Card size="sm">
+    // shrink-0: o Card tem overflow-hidden e a coluna é flex com rolagem; sem isto o resultado espreme o editor.
+    <Card size="sm" className="shrink-0">
       <CardContent className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="label">SQL</span>
