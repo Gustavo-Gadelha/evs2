@@ -9,7 +9,7 @@ Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya 
 - **Somente leitura**: uma instrução `SELECT`/`WITH` por execução (ver "Trava de leitura").
 - **Um único endpoint do Sankhya**: `DbExplorerSP.executeQuery`. Nenhum outro serviço do gateway é chamado, exceto login/logout.
 - **Dicionário somente leitura**: tabelas e colunas sugeridas vêm de `TDDTAB`/`TDDCAM`, lidas pelo mesmo `executeQuery` (SQL montado no servidor, nome da tabela validado). Tabelas, aliases e expressões continuam digitados à mão; sem navegação em árvore nem parser.
-- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones) e, para o histórico e as consultas salvas, Prisma 7 com SQLite (`@prisma/client`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`; `prisma` no dev).
+- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones), shadcn/ui (componentes em `src/components/ui/`, com `@base-ui/react`, `class-variance-authority`, `cn`, `tw-animate-css` e `shadcn`), `sonner` (toasts, com `next-themes`) e, para o histórico e as consultas salvas, Prisma 7 com SQLite (`@prisma/client`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`; `prisma` no dev).
 
 ## Integração com o Sankhya
 
@@ -137,7 +137,8 @@ Três colunas em telas largas; empilhadas em telas estreitas.
     - Rodar (Ctrl/Cmd+Enter): sempre executa o texto do editor, passando pela trava antes;
     - Copiar;
     - Salvar consulta (nome inline).
-- **Resultado**: tabela (padrão) ou JSON bruto; número de linhas e duração; "Copiar CSV" com todas as linhas e colunas do resultado, sem aplicar filtros; erro de consulta (`statusMessage`) em destaque.
+- **Resultado**: tabela (padrão) ou JSON bruto; número de linhas e duração; "Copiar CSV" com todas as linhas e colunas do resultado, sem aplicar filtros; erro de consulta (`statusMessage`) em destaque no painel.
+- **Avisos**: toasts do Sonner no canto inferior direito, com ícone por tipo (erro em vermelho): falhas de login, de perfis, do dicionário e do banco, "nenhum perfil ativo" (fixo, com ação para abrir Perfis), confirmações de perfil salvo/excluído/trocado e "SQL/CSV copiado". O erro de consulta fica só no painel de resultado; a trava de leitura e os problemas do gerador continuam inline.
   - Tabela com TanStack Table (`src/features/results/result-table.tsx`) e linhas virtualizadas com TanStack Virtual (altura fixa de 28px), sem limite de linhas na tela.
   - Ordenação por clique no cabeçalho (ASC → DESC → nenhuma): número como número, texto em ordem natural pt-BR, nulos por último no ASC.
   - Busca global e filtro por coluna: "contém", sem diferenciar maiúsculas nem acentos.
@@ -155,7 +156,7 @@ Três colunas em telas largas; empilhadas em telas estreitas.
 src/app/                    só roteamento: layout, page, globals.css e api/**/route.ts (cada um só reexporta o handler da feature)
 src/lib/sql/                query-state (tipos + estado vazio), to-oracle (gerador), read-only (trava de leitura), functions (menu ƒ)
 src/lib/                    api (cliente HTTP), types; db/ = client Prisma, crypto (AES-256-GCM dos segredos dos perfis), `generated/` gerado e ignorado pelo git
-src/components/             combobox (Downshift), UI genérica
+src/components/             combobox (Downshift); ui/ = componentes shadcn (button, input, textarea, native-select, checkbox, label, field, badge, alert, card, dialog, dropdown-menu, tabs, separator, sonner)
 src/features/sankhya/       components/auth-header; server/: auth, client, errors, redact, state, local-only e handlers login/logout/status
 src/features/query/         components/sql-editor; server/: execute (executeQuery) e handler query
 src/features/dictionary/    components/dictionary-browser e dictionary-provider (autocomplete); client (cache de promessas), search (índice, até 50); server/: dictionary (TDDTAB/TDDCAM) e handlers tables/columns
