@@ -1,8 +1,15 @@
 import type { Profile } from "@/features/profiles/profiles";
 import type { AuthStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { ChevronDownIcon, UserRoundIcon } from "lucide-react";
 
 type Props = {
   status: AuthStatus | null;
@@ -27,6 +34,7 @@ export function AuthHeader({
 }: Props) {
   const authenticated = status?.authenticated ?? false;
   const hasProfile = status?.profile != null;
+  const activeProfile = profiles.find((profile) => profile.id === activeId);
 
   return (
     <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-card px-4 py-3">
@@ -42,23 +50,34 @@ export function AuthHeader({
       </code>
 
       <div className="ml-auto flex flex-wrap items-center gap-3">
-        <NativeSelect
-          size="sm"
-          aria-label="Perfil de acesso"
-          className="w-auto max-w-48"
-          value={activeId ?? ""}
-          disabled={busy || profiles.length === 0}
-          onChange={(event) => onSelectProfile(event.target.value || null)}
-        >
-          {profiles.length === 0 && <option value="">Sem perfis</option>}
-          {profiles.map((profile) => (
-            <option key={profile.id} value={profile.id}>
-              {profile.name}
-            </option>
-          ))}
-        </NativeSelect>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="secondary" size="sm" type="button" className="max-w-48 justify-between" />}
+            aria-label="Perfil de acesso"
+            disabled={busy || profiles.length === 0}
+          >
+            <UserRoundIcon className="text-primary" aria-hidden />
+            <span className="truncate font-semibold">{activeProfile?.name ?? (profiles.length === 0 ? "Sem perfis" : "Selecione")}</span>
+            <ChevronDownIcon className="text-muted-foreground" aria-hidden />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-72 w-56">
+            <DropdownMenuRadioGroup value={activeId ?? ""} onValueChange={(value) => onSelectProfile(value || null)}>
+              {profiles.map((profile) => (
+                <DropdownMenuRadioItem key={profile.id} value={profile.id}>
+                  {profile.name}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button variant="outline" size="sm" type="button" aria-haspopup="dialog" onClick={onOpenProfiles}>
           Perfis
+        </Button>
+        <Button variant="outline" size="sm" type="button" disabled={busy || !hasProfile} onClick={onLogin}>
+          {authenticated ? "Relogar" : "Login"}
+        </Button>
+        <Button variant="outline" size="sm" type="button" disabled={busy || !authenticated} onClick={onLogout}>
+          Logout
         </Button>
         <span className="flex items-center gap-2 text-xs text-foreground">
           <span
@@ -69,12 +88,6 @@ export function AuthHeader({
             ? `Autenticado às ${new Date(status!.authenticatedAt!).toLocaleTimeString("pt-BR")}`
             : "Sem sessão (login automático na 1ª requisição)"}
         </span>
-        <Button variant="outline" size="sm" type="button" disabled={busy || !hasProfile} onClick={onLogin}>
-          {authenticated ? "Relogar" : "Login"}
-        </Button>
-        <Button variant="outline" size="sm" type="button" disabled={busy || !authenticated} onClick={onLogout}>
-          Logout
-        </Button>
       </div>
     </header>
   );

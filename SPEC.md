@@ -140,7 +140,7 @@ type Cond = {
 
 Três colunas em telas largas; empilhadas em telas estreitas.
 
-- **Header**: título, selo "development" e base URL do perfil ativo à esquerda; à direita, seletor de perfil, botão Perfis (diálogo de cadastro), status da sessão e Login/Logout, com o mesmo estilo (`outline`, tamanho `sm`).
+- **Header**: título, selo "development" e base URL do perfil ativo à esquerda; à direita, seletor de perfil (dropdown `secondary` com ícone de usuário e o nome do ativo; itens de rádio), botão Perfis (diálogo de cadastro), Login/Logout e status da sessão, com o mesmo estilo (`outline`, tamanho `sm`).
 - **Builder**: seções recolhíveis FROM · JOINS · SELECT (+ DISTINCT) · WHERE (grupos AND/OR aninháveis) · GROUP BY (auto/manual) · HAVING · ORDER BY · LIMITE. Cada bloco, exceto FROM, tem no cabeçalho um checkbox "omitir" que tira a seção inteira do SQL sem apagá-la (SELECT omitido vira `SELECT *`). Linhas com adicionar, remover, ↑↓, arrastar pelo ícone de grip à esquerda (colunas, joins, condições, grupos e ordenações; também pelo teclado) e ◉/⊘ para omitir só aquele item do SQL (a seção mostra quantos estão omitidos). Campos de tabela e de expressão sugerem tabelas e `ALIAS.COLUNA` do dicionário (`<datalist>` nativo; falha do dicionário só tira as sugestões). Problemas do gerador sob a seção de origem.
 - **Editor SQL**: CodeMirror 6 (`src/features/query/components/sql-code-editor.tsx`) com destaque Oracle (PL/SQL).
   - Autocomplete do dicionário (`use-sql-schema`): tabelas do `TDDTAB` e, para as que o SQL cita, as colunas do `TDDCAM`; os aliases do FROM/JOIN são resolvidos pelo editor, e as palavras-chave e funções vêm do dialeto.
