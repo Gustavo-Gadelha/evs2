@@ -16,7 +16,7 @@ type Props = {
 
 export function Section({ title, problems, off = 0, omitted = false, onToggleOmit, children }: Props) {
   return (
-    <details open className={`rounded border border-zinc-800 bg-zinc-900/40 ${omitted ? "opacity-60" : ""}`}>
+    <details open className={`rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 ${omitted ? "opacity-60" : ""}`}>
       <summary className="flex cursor-pointer select-none items-center gap-2 px-3 py-2">
         <span className="label">{title}</span>
         {off > 0 && (
@@ -40,7 +40,7 @@ export function Section({ title, problems, off = 0, omitted = false, onToggleOmi
           </Badge>
         )}
       </summary>
-      <div className="flex flex-col gap-2 border-t border-zinc-800 p-3">
+      <div className="flex flex-col gap-2 border-t p-3">
         {children}
         {problems.map((problem, index) => (
           <p key={index} className="text-xs text-red-400">
