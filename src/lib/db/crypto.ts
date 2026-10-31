@@ -19,7 +19,7 @@ function key(): Buffer {
   return (globalForKey.snkKey ??= loadKey());
 }
 
-// Formato: base64(iv[12] | tag[16] | texto cifrado).
+// Formato: base64(iv[12] | tag[16] | texto cifrado). `scripts/seed-profile.mjs` reimplementa o mesmo formato.
 export function encrypt(plain: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key(), iv);

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "prisma generate && prisma migrate deploy && next dev --hostname 127.0.0.1 --port 3100",
     "build": "prisma generate && next build",
+    "seed": "node scripts/seed-profile.mjs",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit"
   },

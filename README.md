@@ -13,13 +13,15 @@ Builder visual de SQL Oracle que roda consultas no Sankhya via `DbExplorerSP.exe
 ## Setup
 
 1. Instale o Docker (Docker Desktop no Windows/macOS) para o modo Docker; para o `pnpm dev`, instale Node 26 e pnpm 12 e rode `pnpm install`. O banco é um Postgres 18 que sobe pelo próprio compose, nos dois modos.
-2. Copie `.env.example` para `.env`, troque a senha do Postgres (`POSTGRES_PASSWORD` e a mesma senha dentro de `DATABASE_URL`) e gere a `ENCRYPTION_KEY` (o comando está no arquivo). Não há arquivo de credenciais do Sankhya: ao abrir o app, clique em **Perfis** e cadastre um perfil (nome, base URL, appkey, token, usuário e senha). Cadastre quantos quiser e escolha o ativo no seletor do header; trocar de perfil encerra a sessão do anterior e o login do novo acontece na primeira requisição. Os segredos ficam no Postgres, cifrados (AES-256-GCM) com a chave `ENCRYPTION_KEY` do `.env`, fora do banco; nunca voltam ao navegador. Ao editar um perfil, appkey, token e senha em branco mantêm o valor atual.
+2. Copie `.env.example` para `.env`, troque a senha do Postgres (`POSTGRES_PASSWORD` e a mesma senha dentro de `DATABASE_URL`) e gere a `ENCRYPTION_KEY` (o comando está no arquivo). Os perfis do Sankhya são cadastrados pela tela (ou pelo perfil padrão, passo 3): ao abrir o app, clique em **Perfis** e cadastre um perfil (nome, base URL, appkey, token, usuário e senha). Cadastre quantos quiser e escolha o ativo no seletor do header; trocar de perfil encerra a sessão do anterior e o login do novo acontece na primeira requisição. Os segredos ficam no Postgres, cifrados (AES-256-GCM) com a chave `ENCRYPTION_KEY` do `.env`, fora do banco; nunca voltam ao navegador. Ao editar um perfil, appkey, token e senha em branco mantêm o valor atual.
+3. (Opcional) **Perfil padrão**: para não digitar o perfil na tela, preencha as seis variáveis `SANKHYA_PROFILE_NAME`, `_BASE_URL`, `_APPKEY`, `_TOKEN`, `_USERNAME` e `_PASSWORD` no `.env`, suba o Postgres (`docker compose up -d postgres`) e rode `pnpm seed`. O comando só age se as seis estiverem preenchidas: sem nenhuma, não faz nada; com só algumas, falha apontando as que faltam. Ele cria o perfil, cifrando os segredos como o cadastro pela tela, ou atualiza o de mesmo nome com os valores atuais do `.env`; o perfil vira o ativo apenas se ainda não houver um ativo. Se o app já estiver rodando, reinicie-o depois (`docker compose restart snk-assistant`), porque ele guarda os perfis em memória. O compose não repassa essas variáveis ao container: elas só são lidas pelo `pnpm seed`, no host.
 
 ## Uso
 
 ```sh
 pnpm dev               # desenvolvimento, com hot reload
 docker compose up      # abre em http://localhost:3100
+pnpm seed              # opcional: cria o perfil padrão a partir das SANKHYA_PROFILE_* do .env
 docker compose down    # para (os dados ficam no volume `pgdata`; `down -v` apaga perfis, histórico e consultas salvas)
 ```
 
