@@ -27,11 +27,6 @@ export function newTab(number: number): Tab {
   };
 }
 
-// Aba sem nada digitado nem montado: o próximo item carregado pode ocupá-la em vez de abrir outra.
-export function isBlank(tab: Tab): boolean {
-  return !tab.sql.trim() && !tab.state.from.table.trim() && !tab.result && !tab.error;
-}
-
 export function tabTitle(tab: Tab): string {
   return tab.state.from.table.trim().toUpperCase() || `Consulta ${tab.number}`;
 }

@@ -15,7 +15,7 @@ import {
 } from "@/features/history/history";
 import { emptyQueryState, type QueryState } from "@/lib/sql/query-state";
 import { QueryTabs } from "./query-tabs";
-import { isBlank, newTab, type Tab } from "./tabs";
+import { newTab, type Tab } from "./tabs";
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { addRelationJoin } from "@/lib/sql/add-join";
 import { toOracleSql } from "@/lib/sql/to-oracle";
@@ -209,18 +209,21 @@ export function Explorer() {
     load(entry, entry);
   }
 
-  // Histórico e consultas salvas ocupam a aba ativa se ela estiver em branco; senão abrem uma aba nova.
+  // Histórico e consultas salvas sempre substituem a aba ativa; para manter a atual, o usuário abre outra aba antes.
+  // Com a consulta da aba ainda rodando, não carrega: o resultado dela cairia sobre o que foi carregado.
   function load(draft: QueryDraft, previous?: HistoryEntry) {
+    if (active.running) {
+      toast.warning("A consulta desta aba ainda está rodando", { id: "load-running" });
+      return;
+    }
     const next = toDraft(draft);
-    const patch: Partial<Tab> = {
+    patchTab(active.id, {
       state: next.state,
       sql: next.sql,
       manual: next.manual,
       result: previous?.result ?? null,
       error: previous?.error ?? null,
-    };
-    if (isBlank(active) && !active.running) patchTab(active.id, patch);
-    else addTab(patch);
+    });
   }
 
   function newQuery() {
