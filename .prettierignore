@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+build
+pnpm-lock.yaml
+src/lib/db/generated
+prisma/migrations
+next-env.d.ts
+*.md
+src/components/ui
