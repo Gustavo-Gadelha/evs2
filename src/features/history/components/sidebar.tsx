@@ -2,7 +2,7 @@
 
 import { MAX_HISTORY, type HistoryItem, type SavedQuery } from "../history";
 import { SaveForm } from "./save-form";
-import { PlusIcon } from "lucide-react";
+import { BookOpenIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +15,7 @@ type Props = {
   onRemoveSaved: (id: string) => void;
   onClearHistory: () => void;
   onNewQuery: () => void;
+  onOpenDictionary: () => void;
 };
 
 function oneLine(sql: string): string {
@@ -35,14 +36,20 @@ function ItemButton({ label, title, onClick }: { label: string; title?: string; 
 }
 
 export function Sidebar(props: Props) {
-  const { history, saved, onLoadHistory, onLoadSaved, onSaveHistory, onRemoveSaved, onClearHistory, onNewQuery } = props;
+  const { history, saved, onLoadHistory, onLoadSaved, onSaveHistory, onRemoveSaved, onClearHistory, onNewQuery, onOpenDictionary } = props;
 
   return (
     <aside className="flex flex-col gap-6 border-border p-4 lg:row-span-2 lg:border-r xl:row-span-1">
-      <Button variant="outline" size="sm" type="button" className="w-full" onClick={onNewQuery}>
-        <PlusIcon data-icon="inline-start" />
-        Nova consulta
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button variant="outline" size="sm" type="button" className="w-full" onClick={onNewQuery}>
+          <PlusIcon data-icon="inline-start" />
+          Nova consulta
+        </Button>
+        <Button variant="outline" size="sm" type="button" className="w-full" onClick={onOpenDictionary}>
+          <BookOpenIcon data-icon="inline-start" />
+          Dicionário
+        </Button>
+      </div>
 
       <section className="flex flex-col gap-2">
         <h2 className="label">Consultas salvas</h2>

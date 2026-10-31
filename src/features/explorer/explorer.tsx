@@ -230,9 +230,7 @@ export function Explorer() {
         profiles={profileState.profiles}
         activeId={profileState.activeId}
         busy={authBusy}
-        dictionaryOpen={dictionaryOpen}
         profilesOpen={profilesOpen}
-        onOpenDictionary={() => setDictionaryOpen(true)}
         onOpenProfiles={() => setProfilesOpen(true)}
         onSelectProfile={(id) => void selectProfile(id)}
         onLogin={() => authAction("/api/sankhya/login")}
@@ -252,6 +250,7 @@ export function Explorer() {
           onRemoveSaved={(id) => void persist(savedQueries.remove(id), setSaved)}
           onClearHistory={() => void persist(history.clear(), setHistoryItems)}
           onNewQuery={newQuery}
+          onOpenDictionary={() => setDictionaryOpen(true)}
         />
         <main className="flex min-w-0 flex-col gap-3 p-4">
           <Builder key={status?.profile?.id ?? "none"} state={queryState} problems={generated.problems} onChange={changeState} />
