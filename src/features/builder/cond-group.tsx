@@ -87,10 +87,11 @@ function moveItem(root: CondGroup, rootId: string, from: [string, number], to: [
 }
 
 // Área de soltura do grupo, para receber itens quando ele está vazio (baixa prioridade: as linhas vencem).
-function GroupDrop({ id, children }: { id: string; children: ReactNode }) {
+// Vazia, não ocupa espaço (sem o vão do `gap` do pai): a área de soltura se sobrepõe à barra de botões do grupo.
+function GroupDrop({ id, empty, children }: { id: string; empty: boolean; children: ReactNode }) {
   const { ref } = useDroppable({ id: DROP_PREFIX + id, type: "group", accept: "item", collisionPriority: 1 });
   return (
-    <div ref={ref} className="flex min-h-6 flex-col gap-2">
+    <div ref={ref} className={`flex flex-col gap-2 ${empty ? "pointer-events-none -mt-2 -mb-8 min-h-8" : "min-h-6"}`}>
       {children}
     </div>
   );
@@ -243,7 +244,7 @@ function GroupBody({ group, onChange, depth = 0, onRemove, onToggleOff, rootId, 
         )}
       </div>
 
-      <GroupDrop id={id}>
+      <GroupDrop id={id} empty={group.items.length === 0}>
         {group.items.map((item, index) => {
           const itemId = idOf(item);
           return (
