@@ -9,7 +9,7 @@ Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya 
 - **Somente leitura**: uma instrução `SELECT`/`WITH` por execução (ver "Trava de leitura").
 - **Um único endpoint do Sankhya**: `DbExplorerSP.executeQuery`. Nenhum outro serviço do gateway é chamado, exceto login/logout.
 - **Dicionário somente leitura**: tabelas e colunas sugeridas vêm de `TDDTAB`/`TDDCAM`, lidas pelo mesmo `executeQuery` (SQL montado no servidor, nome da tabela validado). Tabelas, aliases e expressões continuam digitados à mão; sem navegação em árvore nem parser.
-- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones), shadcn/ui (componentes em `src/components/ui/`, com `@base-ui/react`, `class-variance-authority`, `cn`, `tw-animate-css` e `shadcn`), `sonner` (toasts), `@uiw/react-codemirror` e `@codemirror/lang-sql` (editor SQL) e, no dev, `prettier` (formatação do código; `pnpm format`) e, para o histórico e as consultas salvas, Prisma 7 com PostgreSQL (`@prisma/client`, `@prisma/adapter-pg`, `pg`; `prisma` no dev).
+- **Assistente de IA somente sugere** (ver "Assistente"): sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones), shadcn/ui (componentes em `src/components/ui/`, com `@base-ui/react`, `class-variance-authority`, `cn`, `tw-animate-css` e `shadcn`), `sonner` (toasts), `@uiw/react-codemirror` e `@codemirror/lang-sql` (editor SQL) e, no dev, `prettier` (formatação do código; `pnpm format`) e, para o histórico e as consultas salvas, Prisma 7 com PostgreSQL (`@prisma/client`, `@prisma/adapter-pg`, `pg`; `prisma` no dev).
 
 ## Integração com o Sankhya
 
@@ -166,6 +166,16 @@ Três colunas em telas largas; empilhadas em telas estreitas. Do `lg` em diante 
   - Histórico: as últimas 200 execuções no Postgres, com SQL, estado, linhas, status e horário; `state` e `result` são `jsonb` (a ordem das chaves dos objetos não é preservada); o resultado só é guardado quando tem até 5 MB e sem caractere NUL, que o jsonb não aceita (a listagem não o traz; clicar na entrada o busca); há botão de limpar. A lista ocupa o espaço restante da sidebar até o fim da página, rola sem barra visível e é virtualizada (`@tanstack/react-virtual`, altura de cada entrada medida): só as entradas visíveis entram no DOM. Botão direito numa entrada abre o menu: Abrir, Abrir em nova aba, Salvar como consulta… (campo de nome inline sob a entrada) e Excluir.
   - Clicar em um item restaura builder, editor e resultado **na aba ativa**, substituindo o que havia nela; para manter a aba atual, o usuário abre uma aba nova antes. Com a consulta da aba ainda rodando, não carrega e avisa.
 
+## Assistente
+
+Aba "Assistente" na coluna do meio, alternativa ao Builder (`Tabs` do shadcn; as duas ficam montadas, então alternar não perde o estado). Conversa em português que sugere SQL Oracle; um modelo local (Ollama) com o dicionário como base. Cada aba de consulta tem a própria conversa (`Tab.chat`, só na memória).
+
+- **Só sugere**: os blocos ```` ```sql ```` da resposta ganham "Usar no editor" (substitui o SQL da aba, que fica "editado à mão"), "Abrir em nova aba" e "Copiar". Nada roda sozinho; quem executa é o botão Rodar. Blocos que não passam em `checkReadOnly` (e blocos ainda incompletos) ficam com as ações de uso desabilitadas e mostram o motivo.
+- **Rota** `POST /api/assistant/chat` (`localOnly`, zod): `{ messages: {role, content}[], sql }`; responde `application/x-ndjson` com `{type:"delta",text}`, `{type:"done"}` ou `{type:"error",message}` por linha. Contrato em `src/features/assistant/protocol.ts`. Parar a resposta aborta a requisição.
+- **Contexto enviado ao modelo**: a conversa, o SQL da aba e metadados do dicionário. Linhas de resultado do ERP nunca vão ao modelo.
+- **Destino de rede**: o servidor chama só o Ollama configurado por variável de ambiente (nunca escolhido pelo navegador), publicado apenas em loopback.
+- **Estado atual**: a rota é um *stub* que devolve uma resposta fixa em streaming; a integração com o Ollama e o uso do dicionário (busca de tabelas, colunas) ainda não existem. Detalhes das fases em `docs/prompts/agente-ia.md`.
+
 ## Estrutura
 
 ```
@@ -179,6 +189,7 @@ src/features/dictionary/    components/dictionary-browser, table-detail e dictio
 src/features/history/       components/sidebar e save-form; history (tipos, limites, cliente HTTP); server/: store (Prisma) e handlers history/saved
 src/features/builder/       builder, from-joins, select-list, cond-group, group-having, order-limit, expr-input, editable-list, sortable-list, list, row-actions, section
 src/features/results/       result-table, result-view
+src/features/assistant/     assistant-panel (aba Assistente), client (leitor do NDJSON), protocol (tipos), sql-blocks (separa texto e blocos sql); server/: handler chat (stub)
 src/features/explorer/      explorer (orquestra a tela; page.tsx importa daqui), tabs (tipo e helpers das abas) e query-tabs (barra de abas)
 src/features/profiles/      profiles (tipos e cliente HTTP); components/profiles-dialog; server/: store (Prisma + cache decifrado em memória) e handlers profiles, profile-by-id, active
 prisma/                     `schema.prisma` (PostgreSQL; `state` e `result` em jsonb) e migrações (aplicadas por `prisma migrate deploy` no `pnpm dev` e pelo `entrypoint.sh` na subida do container)
@@ -197,4 +208,4 @@ Só há testes automatizados do SQL (`pnpm test:sql`, `node --test` sobre `src/l
 - Deploy fora da máquina local, multiusuário.
 - Outros serviços do gateway; escrita no ERP.
 - Navegação em árvore do esquema e parser de SQL (edição manual não volta para o builder).
-- IA.
+- IA que execute consultas ou grave dados: o assistente só sugere SQL.

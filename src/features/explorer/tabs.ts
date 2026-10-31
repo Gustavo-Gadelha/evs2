@@ -1,3 +1,4 @@
+import type { ChatMessage } from "@/features/assistant/protocol";
 import { emptyQueryState, type QueryState } from "@/lib/sql/query-state";
 import type { QueryResult } from "@/lib/types";
 
@@ -12,6 +13,8 @@ export type Tab = {
   result: QueryResult | null;
   error: string | null;
   running: boolean;
+  // Conversa com o assistente.
+  chat: ChatMessage[];
 };
 
 export function newTab(number: number): Tab {
@@ -24,6 +27,7 @@ export function newTab(number: number): Tab {
     result: null,
     error: null,
     running: false,
+    chat: [],
   };
 }
 

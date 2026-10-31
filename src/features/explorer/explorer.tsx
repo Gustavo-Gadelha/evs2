@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SparklesIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
@@ -29,6 +30,9 @@ import { Builder } from "@/features/builder/builder";
 import { ResultView } from "@/features/results/result-view";
 import { Sidebar } from "@/features/history/components/sidebar";
 import { SqlEditor } from "@/features/query/components/sql-editor";
+import { AssistantPanel } from "@/features/assistant/assistant-panel";
+import type { ChatMessage } from "@/features/assistant/protocol";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 
 function messageOf(err: unknown): string {
@@ -51,6 +55,7 @@ export function Explorer() {
   const [profilesOpen, setProfilesOpen] = useState(false);
   const [profileState, setProfileState] = useState<ProfilesState>({ profiles: [], activeId: null });
   const [saved, setSaved] = useState<SavedQuery[]>([]);
+  const [mode, setMode] = useState<"builder" | "assistant">("builder");
 
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
   const { state: queryState, sql, manual, result, error, running } = active;
@@ -177,6 +182,11 @@ export function Explorer() {
     changeState(next);
     toast.success(`JOIN com ${relation.table} adicionado`, { id: "add-join" });
   }
+
+  // A resposta do assistente chega aos poucos: grava na aba que perguntou, mesmo que outra esteja ativa.
+  const changeChat = useCallback((id: string, update: (chat: ChatMessage[]) => ChatMessage[]) => {
+    setTabs((current) => current.map((tab) => (tab.id === id ? { ...tab, chat: update(tab.chat) } : tab)));
+  }, []);
 
   function changeSql(next: string) {
     patchTab(active.id, { sql: next, manual: true });
@@ -330,12 +340,34 @@ export function Explorer() {
         {/* Do lg em diante cada coluna rola sozinha e a página não passa da altura da janela. */}
         <div className="flex min-w-0 flex-col lg:min-h-0 lg:overflow-y-auto xl:contents">
           <main className="flex min-w-0 flex-col gap-3 p-4 xl:min-h-0 xl:overflow-y-auto">
-            <Builder
-              key={`${active.id}-${status?.profile?.id ?? "none"}`}
-              state={queryState}
-              problems={generated.problems}
-              onChange={changeState}
-            />
+            {/* keepMounted: alternar não perde o estado de seções do builder nem interrompe a resposta do assistente. */}
+            <Tabs value={mode} onValueChange={(value) => setMode(value as "builder" | "assistant")} className="flex-1">
+              <TabsList>
+                <TabsTrigger value="builder">Builder</TabsTrigger>
+                <TabsTrigger value="assistant">
+                  <SparklesIcon /> Assistente
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="builder" keepMounted>
+                <Builder
+                  key={`${active.id}-${status?.profile?.id ?? "none"}`}
+                  state={queryState}
+                  problems={generated.problems}
+                  onChange={changeState}
+                />
+              </TabsContent>
+              <TabsContent value="assistant" keepMounted className="flex min-h-0 flex-col">
+                <AssistantPanel
+                  key={active.id}
+                  tabId={active.id}
+                  chat={active.chat}
+                  sql={sql}
+                  onChatChange={changeChat}
+                  onUseSql={changeSql}
+                  onOpenInNewTab={(next) => addTab({ sql: next, manual: true })}
+                />
+              </TabsContent>
+            </Tabs>
           </main>
           <div className="flex min-w-0 flex-col gap-4 p-4 xl:min-h-0 xl:overflow-y-auto">
             <SqlEditor
