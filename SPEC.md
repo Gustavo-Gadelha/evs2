@@ -9,7 +9,7 @@ Ferramenta pessoal para montar e rodar consultas SQL Oracle no banco do Sankhya 
 - **Somente leitura**: uma instrução `SELECT`/`WITH` por execução (ver "Trava de leitura").
 - **Um único endpoint do Sankhya**: `DbExplorerSP.executeQuery`. Nenhum outro serviço do gateway é chamado, exceto login/logout.
 - **Dicionário somente leitura**: tabelas e colunas sugeridas vêm de `TDDTAB`/`TDDCAM`, lidas pelo mesmo `executeQuery` (SQL montado no servidor, nome da tabela validado). Tabelas, aliases e expressões continuam digitados à mão; sem navegação em árvore nem parser.
-- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones), shadcn/ui (componentes em `src/components/ui/`, com `@base-ui/react`, `class-variance-authority`, `cn`, `tw-animate-css` e `shadcn`), `sonner` (toasts, com `next-themes`) e, para o histórico e as consultas salvas, Prisma 7 com SQLite (`@prisma/client`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`; `prisma` no dev).
+- **Sem IA** e sem dependências além de next, react, tailwind, zod, `@tanstack/react-table` (v9), `@tanstack/react-virtual`, `@dnd-kit/react` (arrastar para reordenar), `downshift` (combobox do autocomplete do dicionário), `lucide-react` (ícones), shadcn/ui (componentes em `src/components/ui/`, com `@base-ui/react`, `class-variance-authority`, `cn`, `tw-animate-css` e `shadcn`), `sonner` (toasts, com `next-themes`) e, para o histórico e as consultas salvas, Prisma 7 com PostgreSQL (`@prisma/client`, `@prisma/adapter-pg`, `pg`; `prisma` no dev).
 
 ## Integração com o Sankhya
 
@@ -19,7 +19,7 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 - **Sessão**: `Authorization: Bearer <token>` em toda requisição. Login sob demanda na primeira requisição; token em cache no `globalThis` (sobrevive ao HMR).
 - **Logout**: `POST {BASE_URL}/gateway/v1/mge/service.sbr?serviceName=MobileLoginSP.logout` com os 4 headers + bearer; timeout 10s. Sem token, é no-op.
 - **Consulta**: `POST gateway/v1/mge/service.sbr?serviceName=DbExplorerSP.executeQuery&outputType=json` com `{ serviceName, requestBody: { sql } }`; timeout 30s. 401 → limpa o token, refaz o login e tenta **uma** vez de novo.
-- **Perfil ativo**: base URL e credenciais vêm do perfil ativo (SQLite); sem perfil, as rotas do Sankhya respondem 409 `NoActiveProfileError`. O token em cache guarda o `profileId` e só vale para ele; trocar, editar ou excluir o perfil faz logout (melhor esforço) e descarta o token. O cache do dicionário é por perfil.
+- **Perfil ativo**: base URL e credenciais vêm do perfil ativo (Postgres); sem perfil, as rotas do Sankhya respondem 409 `NoActiveProfileError`. O token em cache guarda o `profileId` e só vale para ele; trocar, editar ou excluir o perfil faz logout (melhor esforço) e descarta o token. O cache do dicionário é por perfil.
 - **Erros**: `SankhyaAuthError` (502), `SankhyaTimeoutError` (504), `SankhyaClientError` (502), `NoActiveProfileError` (409). O gateway responde 200 mesmo quando a consulta falha: `status !== "1"` no corpo é erro de consulta, com a mensagem do Oracle em `statusMessage`.
 
 ## Rotas
@@ -33,21 +33,21 @@ Port de `isis-orbita/backend/apps/integrations/sankhya` (`auth.py`, `clients.py`
 | `GET/POST /api/profiles`, `PATCH/DELETE /api/profiles/[id]`, `POST /api/profiles/active` | Perfis de acesso: lista `{ profiles: [{ id, name, baseUrl, username }], activeId }` (nunca appkey, token nem senha), cria, edita (segredo em branco mantém), exclui e troca o perfil ativo; cada uma devolve a lista atualizada |
 | `GET /api/sankhya/dictionary/tables` | `[{ name, description }]` de `TDDTAB`, em cache no servidor                                                  |
 | `GET /api/sankhya/dictionary/columns?table=` | `[{ name, description }]` de `TDDCAM` para a tabela (400 `InvalidTable` se o nome não for um identificador Oracle) |
-| `GET/POST/DELETE /api/history` | Lista (sem o resultado, com `hasResult`), grava (e poda além de 200) e limpa o histórico no SQLite                |
+| `GET/POST/DELETE /api/history` | Lista (sem o resultado, com `hasResult`), grava (e poda além de 200) e limpa o histórico no Postgres                |
 | `GET /api/history/[id]`    | Entrada completa, com o resultado quando guardado                                                                     |
-| `GET/POST /api/saved`, `DELETE /api/saved/[id]` | Consultas salvas no SQLite; cada uma devolve a lista atualizada                                  |
+| `GET/POST /api/saved`, `DELETE /api/saved/[id]` | Consultas salvas no Postgres; cada uma devolve a lista atualizada                                  |
 
 `columns` segue `fieldsMetadata` ordenado por `order`; `rows` vem como o Sankhya devolve (mesma regra do `parse_query_result`).
 
 ## Proteções
 
-1. Credenciais só nos perfis do SQLite (`Profile.secret`: appkey, token, usuário e senha em JSON cifrado com AES-256-GCM, `src/lib/db/crypto.ts`). A chave é gerada em `snk-assistant.key` (modo 0600) ao lado do banco, fora do repositório (`prisma/*.key` no `.gitignore` e no `.dockerignore`): protege o `.db` copiado sozinho, não quem lê o volume inteiro. Appkey, token e senha nunca saem do servidor (as rotas de perfil só devolvem nome, base URL e usuário), sem `NEXT_PUBLIC_`; a redação de logs cobre os segredos de todos os perfis. Não há credenciais em `.env*` nem no `compose.yaml`.
+1. Credenciais só nos perfis do Postgres (`Profile.secret`: appkey, token, usuário e senha em JSON cifrado com AES-256-GCM, `src/lib/db/crypto.ts`). A chave (32 bytes em base64) vem de `SNK_ENCRYPTION_KEY` no `.env`, fora do banco e do repositório: protege um dump do Postgres copiado sozinho, não quem lê o `.env`; trocá-la invalida os perfis salvos. Appkey, token e senha nunca saem do servidor (as rotas de perfil só devolvem nome, base URL e usuário), sem `NEXT_PUBLIC_`; a redação de logs cobre os segredos de todos os perfis. As únicas credenciais em `.env` são as do próprio Postgres (`POSTGRES_*`, `DATABASE_URL`) e a chave de cifra (`SNK_ENCRYPTION_KEY`); o `.env` é ignorado pelo git e pelo Docker, e o `.env.example` traz só placeholders; nada do Sankhya fica em `.env*` nem no `compose.yaml`.
 2. (Removida.) As rotas não checam `NODE_ENV`; a proteção depende das proteções 3 e 4.
 3. Rotas recusam `Host` que não seja `localhost`/`127.0.0.1` e `Origin` presente e não local (DNS rebinding e cross-site).
-4. Só na máquina local: Docker Compose ou `pnpm dev`. `pnpm dev` roda `prisma generate`, `prisma migrate deploy` e `next dev --hostname 127.0.0.1 --port 3100` (loopback, nunca `0.0.0.0`), com SQLite em `prisma/dev.db`. No Docker: build standalone (`node server.js`) em `0.0.0.0:3100` dentro do container, publicado apenas em `127.0.0.1:3100`; as migrations rodam no serviço `migrate` antes do app. O `package.json` não tem script `start`; `build` roda `prisma generate && next build` e só serve ao Dockerfile.
+4. Só na máquina local: Docker Compose ou `pnpm dev`. `pnpm dev` roda `prisma generate`, `prisma migrate deploy` e `next dev --hostname 127.0.0.1 --port 3100` (loopback, nunca `0.0.0.0`), com o Postgres do compose (`docker compose up -d postgres`; `DATABASE_URL` do `.env`). No Docker: build standalone (`node server.js`) em `0.0.0.0:3100` dentro do container, publicado apenas em `127.0.0.1:3100`; o Postgres (imagem `postgres:18-alpine`, serviço `postgres`) só é publicado em `127.0.0.1:${POSTGRES_PORT}` e o app só sobe depois do healthcheck dele; o `entrypoint.sh` aplica as migrations (CLI do Prisma isolado em `/opt/prisma`) antes de iniciar o app. O `package.json` não tem script `start`; `build` roda `prisma generate && next build` e só serve ao Dockerfile.
 5. Senha, token, appkey e bearer token nunca aparecem em logs nem em respostas (headers e corpos passam por redação).
 6. O navegador não escolhe path, método nem headers: a única chamada ao gateway é a de `executeQuery`, montada no servidor.
-7. O banco SQLite (`/data/snk-assistant.db`) guarda dados reais do ERP: fica num volume Docker nomeado (`data`) ou, no `pnpm dev`, em `prisma/dev.db` (ignorado pelo git), fora do bind mount; `src/lib/db/` e os `server/` das features começam com `import "server-only"` e as rotas `/api/history` e `/api/saved` passam pelas mesmas proteções 2 e 3 (`localOnly`).
+7. O banco Postgres guarda dados reais do ERP: fica no volume Docker nomeado `pgdata` (o mesmo banco serve o Docker e o `pnpm dev`), fora do bind mount, com senha vinda do `.env` e porta só em loopback; `src/lib/db/` e os `server/` das features começam com `import "server-only"` e as rotas `/api/history` e `/api/saved` passam pelas mesmas proteções 2 e 3 (`localOnly`).
 
 ## Trava de leitura
 
@@ -146,8 +146,8 @@ Três colunas em telas largas; empilhadas em telas estreitas.
   - Colunas identificadas pelo índice (nomes podem repetir); largura calculada pelo conteúdo (72–420px).
   - Cada resultado novo começa sem filtros, ordenação ou colunas ocultas.
 - **Sidebar**:
-  - Consultas salvas: nome + `QueryState` + SQL + se foi editado à mão; no SQLite (as do antigo `localStorage` são importadas uma vez e removidas de lá);
-  - Histórico: as últimas 200 execuções no SQLite, com SQL, estado, linhas, status e horário; o resultado só é guardado quando tem até 5 MB (a listagem não o traz; clicar na entrada o busca); há botão de limpar.
+  - Consultas salvas: nome + `QueryState` + SQL + se foi editado à mão; no Postgres (as do antigo `localStorage` são importadas uma vez e removidas de lá);
+  - Histórico: as últimas 200 execuções no Postgres, com SQL, estado, linhas, status e horário; `state` e `result` são `jsonb` (a ordem das chaves dos objetos não é preservada); o resultado só é guardado quando tem até 5 MB e sem caractere NUL, que o jsonb não aceita (a listagem não o traz; clicar na entrada o busca); há botão de limpar.
   - Clicar em um item restaura builder e editor.
 
 ## Estrutura
@@ -165,12 +165,15 @@ src/features/builder/       builder, from-joins, select-list, cond-group, group-
 src/features/results/       result-table, result-view
 src/features/explorer/      explorer (orquestra a tela; page.tsx importa daqui)
 src/features/profiles/      profiles (tipos e cliente HTTP); components/profiles-dialog; server/: store (Prisma + cache decifrado em memória) e handlers profiles, profile-by-id, active
-prisma/                     `schema.prisma` e migrações (aplicadas por `prisma migrate deploy` na subida do container)
+prisma/                     `schema.prisma` (PostgreSQL; `state` e `result` em jsonb) e migrações (aplicadas por `prisma migrate deploy` no `pnpm dev` e pelo `entrypoint.sh` na subida do container)
+compose.yaml                serviços `postgres` (postgres:18-alpine, volume `pgdata`, healthcheck) e `snk-assistant`; lê o `.env`
+entrypoint.sh               valida `DATABASE_URL` e `SNK_ENCRYPTION_KEY`, aplica as migrations e executa o servidor (`exec`)
+.env.example                modelo do `.env` (Postgres, `DATABASE_URL`, `SNK_ENCRYPTION_KEY`); o `.env` é ignorado pelo git e pelo Docker
 ```
 
 ## Verificação
 
-Sem testes automatizados. `pnpm typecheck`; no container, contra um Sankhya falso: SQL gerado para join + agregação + HAVING, WHERE aninhado, os dois estilos de limite e escape de aspas; casos da trava de leitura que devem passar e ser recusados; no navegador, o fluxo montar → editar à mão → regenerar → rodar → salvar → recarregar do histórico.
+Sem testes automatizados. `pnpm typecheck`; no container, contra um Sankhya falso: SQL gerado para join + agregação + HAVING, WHERE aninhado, os dois estilos de limite e escape de aspas; casos da trava de leitura que devem passar e ser recusados; no banco, subir o compose do zero (migrations aplicadas, colunas `jsonb`), reiniciar o app sem perder perfis, histórico nem consultas salvas, e gravar um resultado com NUL (entra sem o resultado); no navegador, o fluxo montar → editar à mão → regenerar → rodar → salvar → recarregar do histórico.
 
 ## Fora do escopo
 
