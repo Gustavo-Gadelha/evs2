@@ -47,7 +47,7 @@ export function AiStatus({ profileId }: { profileId: string | null }) {
         const event = JSON.parse(line) as IndexEvent;
         if (event.type === "progress") setProgress(`Indexando ${event.done}/${event.total}`);
         else if (event.type === "error") throw new Error(event.message);
-        else if (event.type === "done") toast.success(`Índice pronto: ${event.documents} documentos`);
+        else if (event.type === "done") toast.success(`Índice pronto: ${event.documents} documentos (${event.embedded} recalculados)`);
       };
       for (;;) {
         const { done, value } = await reader.read();

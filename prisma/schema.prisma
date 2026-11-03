@@ -69,6 +69,8 @@ model AiDocument {
   ref       String
   title     String
   content   String
+  // SHA-256 do texto embedado; null em linhas anteriores à migration ou importadas.
+  hash      String?
   embedding Unsupported("vector")
 
   @@unique([erpKey, kind, ref])

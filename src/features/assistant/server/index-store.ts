@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { aiConfig } from "./config";
 import { db } from "@/lib/db/client";
@@ -44,12 +44,33 @@ export async function deleteDocuments(erpKey: string): Promise<void> {
   await db().aiDocument.deleteMany({ where: { erpKey } });
 }
 
-export async function existingRefs(erpKey: string, kind: DocKind, refPrefix: string): Promise<Set<string>> {
+// Hash do texto que vira embedding: igual ao guardado = o vetor continua valendo.
+export const documentHash = (doc: IndexDocument) => createHash("sha256").update(doc.embedText).digest("hex");
+
+// ref -> hash (null em linhas sem hash) dos documentos já indexados.
+export async function existingHashes(
+  erpKey: string,
+  kind: DocKind,
+  refPrefix = "",
+): Promise<Map<string, string | null>> {
   const rows = await db().aiDocument.findMany({
     where: { erpKey, kind, ref: { startsWith: refPrefix } },
-    select: { ref: true },
+    select: { ref: true, hash: true },
   });
-  return new Set(rows.map((r) => r.ref));
+  return new Map(rows.map((r) => [r.ref, r.hash]));
+}
+
+export async function deleteRefs(erpKey: string, kind: DocKind, refs: string[]): Promise<void> {
+  if (refs.length === 0) return;
+  await db().aiDocument.deleteMany({ where: { erpKey, kind, ref: { in: refs } } });
+}
+
+// As colunas de uma tabela removida do dicionário não servem mais.
+export async function deleteColumnsOfTables(erpKey: string, tables: string[]): Promise<void> {
+  if (tables.length === 0) return;
+  await db().aiDocument.deleteMany({
+    where: { erpKey, kind: "column", OR: tables.map((t) => ({ ref: { startsWith: `${t}.` } })) },
+  });
 }
 
 export async function upsertDocuments(erpKey: string, docs: IndexDocument[], vectors: number[][]): Promise<void> {
@@ -57,11 +78,12 @@ export async function upsertDocuments(erpKey: string, docs: IndexDocument[], vec
   await db().$transaction(
     docs.map(
       (doc, i) => db().$executeRaw`
-        INSERT INTO "AiDocument" ("id", "erpKey", "kind", "ref", "title", "content", "embedding")
+        INSERT INTO "AiDocument" ("id", "erpKey", "kind", "ref", "title", "content", "hash", "embedding")
         VALUES (${randomUUID()}, ${erpKey}, ${doc.kind}, ${doc.ref}, ${doc.title}, ${doc.content},
-                ${toVectorLiteral(vectors[i])}::vector)
+                ${documentHash(doc)}, ${toVectorLiteral(vectors[i])}::vector)
         ON CONFLICT ("erpKey", "kind", "ref") DO UPDATE
-          SET "title" = EXCLUDED."title", "content" = EXCLUDED."content", "embedding" = EXCLUDED."embedding"`,
+          SET "title" = EXCLUDED."title", "content" = EXCLUDED."content", "hash" = EXCLUDED."hash",
+              "embedding" = EXCLUDED."embedding"`,
     ),
   );
 }

@@ -1,7 +1,8 @@
 // Eventos do POST /api/assistant/index (NDJSON) e resposta do GET.
 export type IndexEvent =
   | { type: "progress"; phase: "tables" | "queries"; done: number; total: number }
-  | { type: "done"; documents: number; embedMs: number }
+  // `embedded`: quantos documentos foram (re)calculados; o resto foi reaproveitado do índice anterior.
+  | { type: "done"; documents: number; embedded: number; embedMs: number }
   | { type: "error"; message: string };
 
 export type IndexStatus = {
