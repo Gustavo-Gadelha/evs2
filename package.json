@@ -13,6 +13,8 @@
     "test:ai": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"src/lib/ai/__tests__/*.test.mjs\"",
     "ai:export": "node scripts/ai-export.mjs",
     "ai:import": "node scripts/ai-import.mjs",
+    "ai:pull-chat": "node scripts/ai-pull-chat.mjs",
+    "ai:pull-embed": "node scripts/ai-pull-embed.mjs",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {

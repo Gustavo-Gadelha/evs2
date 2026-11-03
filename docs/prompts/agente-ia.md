@@ -54,7 +54,7 @@ Valide as variáveis com zod no servidor, como o resto do projeto, e exponha o p
 - Serviço `ollama` com imagem `ollama/ollama` em **versão fixada**, volume nomeado `ollama` e healthcheck.
 - Porta publicada **só em loopback**: `127.0.0.1:11434:11434`, no mesmo padrão e com o mesmo tipo de comentário do Postgres. Isso existe para o `pnpm dev`, que roda no host. Nunca `11434:11434`.
 - Variáveis do serviço: `OLLAMA_KEEP_ALIVE` alto (por exemplo, `30m`), `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=2` (chat + embeddings).
-- Serviço de inicialização `ollama-pull`, que roda `ollama pull` do modelo de chat e do de embeddings contra `ollama:11434` e termina. O app depende dele com `service_completed_successfully`, como já depende do Postgres.
+- Sem serviço de inicialização: os modelos são baixados por `pnpm ai:pull-chat` e `pnpm ai:pull-embed`, que rodam `ollama pull` dentro do container `ollama` (substituíram o antigo serviço `ollama-pull`).
 - O app recebe `OLLAMA_BASE_URL=http://ollama:11434` no compose. No `pnpm dev`, o valor vem do `.env` (`http://127.0.0.1:11434`).
 - **GPU em arquivo à parte:** `compose.gpu.yaml` com a reserva de dispositivo NVIDIA (`deploy.resources.reservations.devices`). O desktop usa os dois arquivos; o notebook usa só o `compose.yaml`. Documente no `.env.example` como fixar isso com `COMPOSE_FILE`, lembrando que o separador no Windows é `;` (ou use `COMPOSE_PATH_SEPARATOR`).
 - **Simulação do notebook:** `compose.cpu.yaml`, que tira a GPU e limita o `ollama` a `cpus: "4"` e a cerca de 8 GB de memória. Serve para medir o preset `cpu` no desktop.

@@ -40,29 +40,7 @@ services:
       timeout: 5s
       retries: 20
 
-  # Baixa os modelos do preset e termina; o app só sobe depois.
-  ollama-pull:
-    image: ollama/ollama:0.40.13
-    depends_on:
-      ollama:
-        condition: service_healthy
-    restart: "no"
-    environment:
-      OLLAMA_HOST: ollama:11434
-      AI_PRESET: ${AI_PRESET:-gpu}
-      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-}
-      AI_EMBED_MODEL: ${AI_EMBED_MODEL:-bge-m3}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -e
-        chat="$${AI_CHAT_MODEL:-}"
-        if [ -z "$$chat" ]; then
-          if [ "$$AI_PRESET" = "cpu" ]; then chat=qwen3:4b; else chat=qwen3:8b; fi
-        fi
-        ollama pull "$$chat"
-        ollama pull "$$AI_EMBED_MODEL"
-
+  # Os modelos não são baixados aqui: rode `pnpm ai:pull-chat` e `pnpm ai:pull-embed` (uma vez; ficam no volume `ollama`).
   erp-assistant:
     build:
       context: .
@@ -70,8 +48,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      ollama-pull:
-        condition: service_completed_successfully
     ports:
       # Só loopback: nunca "3100:3100", que exporia a ferramenta (e a sessão no Sankhya) na rede.
       - "127.0.0.1:3100:3100"

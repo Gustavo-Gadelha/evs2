@@ -6,7 +6,7 @@
 
 **Gerado:**
 
-- `compose.yaml`: serviços `ollama` (0.40.13, loopback, healthcheck, volume `ollama`) e `ollama-pull` (baixa chat e embeddings do preset; o app depende dele com `service_completed_successfully`); Postgres trocado por `pgvector/pgvector:pg18`.
+- `compose.yaml`: serviços `ollama` (0.40.13, loopback, healthcheck, volume `ollama`) e `ollama-pull` (baixa chat e embeddings do preset; o app dependia dele com `service_completed_successfully`; depois removido em favor de `pnpm ai:pull-chat` e `ai:pull-embed`, que rodam `ollama pull` dentro do container); Postgres trocado por `pgvector/pgvector:pg18`.
 - `compose.gpu.yaml` (reserva NVIDIA) e `compose.cpu.yaml` (4 CPUs, 8 GB) para medir o preset `cpu` no desktop.
 - Migration `20261101000000_pgvector` (`CREATE EXTENSION vector`).
 - `src/features/assistant/server/config.ts` (presets + zod; o compose repassa variáveis vazias, tratadas como ausentes) e `GET /api/assistant/status`.
@@ -20,7 +20,7 @@
 
 **Verificação:** `docker compose config` válido com `compose.yaml` sozinho, com `compose.gpu.yaml` e com `compose.cpu.yaml`; `pnpm typecheck` e Prettier passam.
 
-**Pendente:** subir de fato os serviços (`ollama ps` na GPU, `ollama-pull`, migration `vector`) e medir os presets; a troca do volume `pgdata` real depende do usuário.
+**Pendente:** subir de fato os serviços (`ollama ps` na GPU, `ai:pull-chat`/`ai:pull-embed`, migration `vector`) e medir os presets; a troca do volume `pgdata` real depende do usuário.
 
 ## Agente de IA local — Fase 2 (base de conhecimento)
 

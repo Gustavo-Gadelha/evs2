@@ -23,6 +23,7 @@ pnpm dev               # desenvolvimento, com hot reload
 docker compose up      # abre em http://localhost:3100
 pnpm seed              # opcional: cria o perfil padrão a partir das SANKHYA_PROFILE_* do .env
 pnpm test:ai           # testes da lógica pura do assistente (fusão de rankings, documentos, termos de busca)
+pnpm ai:pull-chat      # baixa o modelo de chat no container ollama (e ai:pull-embed, o de embeddings)
 pnpm ai:export         # exporta o índice do assistente (NDJSON em ai-export/); pnpm ai:import o lê em outra máquina
 pnpm test:sql          # testes do gerador de SQL, da trava de leitura e do JOIN do dicionário (node --test)
 pnpm format            # formata o código com o Prettier (format:check só confere)
@@ -35,7 +36,7 @@ No Docker não há hot reload: depois de mudar o código ou as dependências, ro
 
 ### Assistente de IA (Ollama)
 
-O compose sobe também o `ollama` (só em `127.0.0.1:11434`) e o `ollama-pull`, que baixa os modelos do preset e termina antes do app subir (a primeira subida demora). O `AI_PRESET` do `.env` escolhe os padrões:
+O compose sobe também o `ollama` (só em `127.0.0.1:11434`), mas não baixa os modelos: com o `ollama` no ar, rode uma vez `pnpm ai:pull-chat` e `pnpm ai:pull-embed` (cada um executa `ollama pull` dentro do container, com o modelo do preset ou o de `AI_CHAT_MODEL`/`AI_EMBED_MODEL`; ficam no volume `ollama`). Sem eles, o chat e a indexação respondem "Modelo não baixado". O `AI_PRESET` do `.env` escolhe os padrões:
 
 - **`gpu`** (desktop, NVIDIA): `COMPOSE_FILE=compose.yaml;compose.gpu.yaml` (separador `;` no Windows; `:` no Linux/macOS, ou `COMPOSE_PATH_SEPARATOR`). Confira com `docker compose exec ollama ollama ps`.
 - **`cpu`** (notebook): `AI_PRESET=cpu` e só o `compose.yaml`. Para medir esse preset no desktop, use `compose.yaml;compose.cpu.yaml` (4 CPUs, 8 GB, sem GPU).
