@@ -48,3 +48,29 @@ model AppSetting {
   key   String @id
   value String
 }
+
+// Índice do dicionário para o assistente (RAG). Pertence ao ERP (base URL normalizada), não ao perfil.
+// Inserção e busca são SQL cru parametrizado (ver `src/features/assistant/server/index-store.ts`).
+model AiIndex {
+  erpKey     String   @id
+  // Modelo e dimensão dos vetores: a busca recusa se não baterem com `AI_EMBED_MODEL`.
+  embedModel String
+  dimension  Int
+  builtAt    DateTime
+  // O dicionário foi atualizado depois da última indexação.
+  stale      Boolean  @default(false)
+}
+
+// `kind`: table | column | query. `ref`: tabela, `TABELA.COLUNA` ou id da consulta salva.
+model AiDocument {
+  id        String                 @id
+  erpKey    String
+  kind      String
+  ref       String
+  title     String
+  content   String
+  embedding Unsupported("vector")
+
+  @@unique([erpKey, kind, ref])
+  @@index([erpKey, kind])
+}
