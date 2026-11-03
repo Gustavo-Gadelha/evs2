@@ -192,7 +192,7 @@ Aba "Assistente", alternativa ao Builder: o seletor Builder | Assistente fica na
 src/app/                    só roteamento: layout, page, globals.css e api/**/route.ts (cada um só reexporta o handler da feature)
 src/lib/sql/                query-state (tipos + estado vazio), to-oracle (gerador), add-join (JOIN a partir de uma ligação do dicionário), read-only (trava de leitura), functions (menu ƒ)
 src/lib/                    api (cliente HTTP), types; db/ = client Prisma, crypto (AES-256-GCM dos segredos dos perfis), `generated/` gerado e ignorado pelo git
-src/components/             combobox (Downshift); ui/ = componentes shadcn (button, input, textarea, native-select, checkbox, label, field, badge, alert, card, dialog, context-menu, dropdown-menu, tabs, separator, sonner e os AI Elements message, message-scroller, bubble, input-group e code-block)
+src/components/             combobox (Downshift), option-menu (escolha única); ui/ = componentes shadcn (button, input, textarea, checkbox, label, field, badge, alert, card, dialog, context-menu, dropdown-menu, tabs, separator, sonner e os AI Elements message, message-scroller, bubble, input-group e code-block)
 src/features/sankhya/       components/auth-header; server/: auth, client, errors, redact, state, local-only e handlers login/logout/status
 src/features/query/         components/sql-editor e sql-code-editor; server/: execute (executeQuery) e handler query
 src/features/dictionary/    components/dictionary-browser, table-detail e dictionary-provider (autocomplete); use-sql-schema (esquema do editor), client (cache de promessas), search (índice, até 50); server/: dictionary (TDDTAB/TDDCAM), detail (TDDCAM/TDDOPC/TDDLIG/TDDINS/TDDLGC) e handlers tables/columns/table/refresh

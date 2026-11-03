@@ -1,15 +1,9 @@
 import type { Profile } from "@/features/profiles/profiles";
 import type { AuthStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { OptionMenu } from "@/components/option-menu";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDownIcon, UserRoundIcon } from "lucide-react";
+import { UserRoundIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 type Props = {
@@ -38,7 +32,6 @@ export function AuthHeader({
 }: Props) {
   const authenticated = status?.authenticated ?? false;
   const hasProfile = status?.profile != null;
-  const activeProfile = profiles.find((profile) => profile.id === activeId);
 
   return (
     <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-card px-4 py-3">
@@ -55,28 +48,20 @@ export function AuthHeader({
 
       <div className="ml-auto flex flex-wrap items-center gap-3">
         {extra}
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button variant="secondary" size="sm" type="button" className="max-w-48 justify-between" />}
-            aria-label="Perfil de acesso"
-            disabled={busy || profiles.length === 0}
-          >
-            <UserRoundIcon className="text-primary" aria-hidden />
-            <span className="truncate font-semibold">
-              {activeProfile?.name ?? (profiles.length === 0 ? "Sem perfis" : "Selecione")}
-            </span>
-            <ChevronDownIcon className="text-muted-foreground" aria-hidden />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="max-h-72 w-56">
-            <DropdownMenuRadioGroup value={activeId ?? ""} onValueChange={(value) => onSelectProfile(value || null)}>
-              {profiles.map((profile) => (
-                <DropdownMenuRadioItem key={profile.id} value={profile.id}>
-                  {profile.name}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <OptionMenu
+          label="Perfil de acesso"
+          variant="secondary"
+          className="max-w-48 font-semibold"
+          icon={<UserRoundIcon className="text-primary" aria-hidden />}
+          placeholder={profiles.length === 0 ? "Sem perfis" : "Selecione"}
+          disabled={busy || profiles.length === 0}
+          align="end"
+          contentClassName="max-h-72 w-56"
+          mono={false}
+          value={activeId ?? ""}
+          options={profiles.map((profile) => ({ value: profile.id, label: profile.name }))}
+          onChange={(id) => onSelectProfile(id || null)}
+        />
         <Button variant="outline" size="sm" type="button" aria-haspopup="dialog" onClick={onOpenProfiles}>
           Perfis
         </Button>

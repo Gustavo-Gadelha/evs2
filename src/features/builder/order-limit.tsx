@@ -4,9 +4,20 @@ import { DEFAULT_LIMIT, type Limit, type OrderItem, type QueryState } from "@/li
 import { ExprInput } from "./expr-input";
 import { EditableList } from "./editable-list";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { OptionMenu } from "@/components/option-menu";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
+
+const DIRS: OrderItem["dir"][] = ["ASC", "DESC"];
+const NULLS: { value: NonNullable<OrderItem["nulls"]> | ""; label: string }[] = [
+  { value: "", label: "nulos: padrão" },
+  { value: "FIRST", label: "NULLS FIRST" },
+  { value: "LAST", label: "NULLS LAST" },
+];
+const LIMIT_STYLES: { value: Limit["style"]; label: string }[] = [
+  { value: "fetch", label: "FETCH NEXT (Oracle 12c+)" },
+  { value: "rownum", label: "ROWNUM (Oracle 11g)" },
+];
 
 export function OrderByClause({ state, onChange }: Props) {
   return (
@@ -24,25 +35,13 @@ export function OrderByClause({ state, onChange }: Props) {
             value={item.expr}
             onChange={(expr) => update({ expr })}
           />
-          <NativeSelect
-            size="sm"
-            aria-label="Direção"
-            value={item.dir}
-            onChange={(event) => update({ dir: event.target.value as OrderItem["dir"] })}
-          >
-            <option>ASC</option>
-            <option>DESC</option>
-          </NativeSelect>
-          <NativeSelect
-            size="sm"
-            aria-label="Posição dos nulos"
+          <OptionMenu label="Direção" value={item.dir} options={DIRS} onChange={(dir) => update({ dir })} />
+          <OptionMenu
+            label="Posição dos nulos"
             value={item.nulls ?? ""}
-            onChange={(event) => update({ nulls: (event.target.value || undefined) as OrderItem["nulls"] })}
-          >
-            <option value="">nulos: padrão</option>
-            <option value="FIRST">NULLS FIRST</option>
-            <option value="LAST">NULLS LAST</option>
-          </NativeSelect>
+            options={NULLS}
+            onChange={(nulls) => update({ nulls: nulls || undefined })}
+          />
         </>
       )}
     />
@@ -76,15 +75,12 @@ export function LimitClause({ state, onChange }: Props) {
           onChange={(event) => setLimit({ offset: event.target.valueAsNumber })}
         />
       </label>
-      <NativeSelect
-        size="sm"
-        aria-label="Estilo do limite"
+      <OptionMenu
+        label="Estilo do limite"
         value={limit.style}
-        onChange={(event) => setLimit({ style: event.target.value as Limit["style"] })}
-      >
-        <option value="fetch">FETCH NEXT (Oracle 12c+)</option>
-        <option value="rownum">ROWNUM (Oracle 11g)</option>
-      </NativeSelect>
+        options={LIMIT_STYLES}
+        onChange={(style) => setLimit({ style })}
+      />
     </div>
   );
 }

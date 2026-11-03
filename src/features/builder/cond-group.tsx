@@ -21,7 +21,7 @@ import { SortableRow } from "./sortable-list";
 import { RowActions } from "./row-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { OptionMenu } from "@/components/option-menu";
 
 const MAX_DEPTH = 3;
 const KIND_LABELS: Record<ValueKind, string> = { text: "texto", number: "número", date: "data", expr: "expressão" };
@@ -118,30 +118,20 @@ function CondRow({ cond, onChange }: { cond: Cond; onChange: (cond: Cond) => voi
         value={cond.left}
         onChange={(left) => onChange({ ...cond, left })}
       />
-      <NativeSelect
-        size="sm"
-        aria-label="Operador"
+      <OptionMenu
+        label="Operador"
         value={cond.op}
-        onChange={(event) => onChange({ ...cond, op: event.target.value as CondOp })}
-      >
-        {COND_OPS.map((op) => (
-          <option key={op}>{op}</option>
-        ))}
-      </NativeSelect>
+        options={COND_OPS}
+        onChange={(op) => onChange({ ...cond, op })}
+      />
       {!NO_VALUE_OPS.includes(cond.op) && (
         <>
-          <NativeSelect
-            size="sm"
-            aria-label="Tipo do valor"
+          <OptionMenu
+            label="Tipo do valor"
             value={right.kind}
-            onChange={(event) => setRight({ kind: event.target.value as ValueKind })}
-          >
-            {VALUE_KINDS.map((kind) => (
-              <option key={kind} value={kind}>
-                {KIND_LABELS[kind]}
-              </option>
-            ))}
-          </NativeSelect>
+            options={VALUE_KINDS.map((kind) => ({ value: kind, label: KIND_LABELS[kind] }))}
+            onChange={(kind) => setRight({ kind })}
+          />
           <Input
             aria-label="Valor"
             type={inputType}

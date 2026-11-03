@@ -1,11 +1,11 @@
 "use client";
 
-import { JOIN_TYPES, type Join, type JoinType, type QueryState } from "@/lib/sql/query-state";
+import { JOIN_TYPES, type Join, type QueryState } from "@/lib/sql/query-state";
 import { CondGroupEditor } from "./cond-group";
 import { Combobox } from "@/components/combobox";
 import { useDictionary } from "@/features/dictionary/components/dictionary-provider";
 import { EditableList } from "./editable-list";
-import { NativeSelect } from "@/components/ui/native-select";
+import { OptionMenu } from "@/components/option-menu";
 
 type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void };
 
@@ -73,16 +73,12 @@ export function JoinsClause({ state, onChange }: Props) {
       add={[{ label: "+ join", make: newJoin }]}
       renderRow={(join, _, update) => (
         <>
-          <NativeSelect
-            size="sm"
-            aria-label="Tipo de join"
+          <OptionMenu
+            label="Tipo de join"
             value={join.type}
-            onChange={(event) => update({ type: event.target.value as JoinType })}
-          >
-            {JOIN_TYPES.map((type) => (
-              <option key={type}>{type}</option>
-            ))}
-          </NativeSelect>
+            options={JOIN_TYPES}
+            onChange={(type) => update({ type })}
+          />
           <IdentInput
             label="Tabela do join"
             suggest

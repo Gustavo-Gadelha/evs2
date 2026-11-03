@@ -1,10 +1,10 @@
 "use client";
 
-import { AGG_FNS, type AggExpr, type AggFn, type Expr, type QueryState, type SelectItem } from "@/lib/sql/query-state";
+import { AGG_FNS, type AggExpr, type Expr, type QueryState, type SelectItem } from "@/lib/sql/query-state";
 import { ExprInput } from "./expr-input";
 import { EditableList } from "./editable-list";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { OptionMenu } from "@/components/option-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
@@ -13,17 +13,13 @@ type Props = { state: QueryState; onChange: (patch: Partial<QueryState>) => void
 function AggEditor({ expr, onChange }: { expr: AggExpr; onChange: (expr: Expr) => void }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1.5">
-      <NativeSelect
-        size="sm"
-        aria-label="Agregação"
+      <OptionMenu
+        label="Agregação"
         className="font-semibold"
         value={expr.fn}
-        onChange={(event) => onChange({ ...expr, fn: event.target.value as AggFn })}
-      >
-        {AGG_FNS.map((fn) => (
-          <option key={fn}>{fn}</option>
-        ))}
-      </NativeSelect>
+        options={AGG_FNS}
+        onChange={(fn) => onChange({ ...expr, fn })}
+      />
       <Label className="shrink-0 gap-1 text-xs font-normal whitespace-nowrap text-muted-foreground">
         <Checkbox checked={expr.distinct} onCheckedChange={(checked) => onChange({ ...expr, distinct: checked })} />
         DISTINCT
