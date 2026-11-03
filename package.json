@@ -10,6 +10,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:sql": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"src/lib/sql/__tests__/*.test.mjs\"",
+    "test:ai": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"src/lib/ai/__tests__/*.test.mjs\"",
+    "ai:export": "node scripts/ai-export.mjs",
+    "ai:import": "node scripts/ai-import.mjs",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
@@ -22,11 +25,13 @@
     "@tanstack/react-table": "^9.2.4",
     "@tanstack/react-virtual": "^3.14.13",
     "@uiw/react-codemirror": "^4.25.12",
+    "ai": "^7.0.157",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "downshift": "^9.4.0",
     "lucide-react": "1.64.0",
     "next": "16.3.6",
+    "ollama-ai-provider-v2": "4.1.0",
     "pg": "^8.23.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
