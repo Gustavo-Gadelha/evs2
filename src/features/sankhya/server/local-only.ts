@@ -2,6 +2,7 @@ import "server-only";
 
 import { InvalidPathError } from "./client";
 import { SankhyaError } from "./errors";
+import { AiError } from "@/lib/ai/errors";
 
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
@@ -44,6 +45,9 @@ export function errorResponse(err: unknown): Response {
     return Response.json({ error: { type: "InvalidPath", message: err.message } }, { status: 400 });
   }
   if (err instanceof SankhyaError) {
+    return Response.json({ error: { type: err.name, message: err.message } }, { status: err.httpStatus });
+  }
+  if (err instanceof AiError) {
     return Response.json({ error: { type: err.name, message: err.message } }, { status: err.httpStatus });
   }
   console.error("[sankhya] Unexpected error", err instanceof Error ? err.name : typeof err);
