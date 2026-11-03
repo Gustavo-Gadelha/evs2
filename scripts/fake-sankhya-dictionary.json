@@ -302,10 +302,46 @@
   "TDDCAM": {
     "description": "Dicionário de dados: campos",
     "columns": {
+      "NUCAMPO": "Número do campo",
       "NOMETAB": "Nome da tabela",
       "NOMECAMPO": "Nome do campo",
       "DESCRCAMPO": "Descrição do campo",
-      "TIPCAMPO": "Tipo do campo"
+      "TIPCAMPO": "Tipo do campo",
+      "TAMANHO": "Tamanho do campo"
+    }
+  },
+  "TDDOPC": {
+    "description": "Dicionário de dados: opções de campo",
+    "columns": {
+      "NUCAMPO": "Número do campo",
+      "VALOR": "Valor da opção",
+      "OPCAO": "Descrição da opção",
+      "ORDEM": "Ordem"
+    }
+  },
+  "TDDINS": {
+    "description": "Dicionário de dados: instâncias",
+    "columns": {
+      "NUINSTANCIA": "Número da instância",
+      "NOMETAB": "Nome da tabela"
+    }
+  },
+  "TDDLIG": {
+    "description": "Dicionário de dados: ligações",
+    "columns": {
+      "NUINSTORIG": "Instância de origem",
+      "NUINSTDEST": "Instância de destino",
+      "LIBERADO": "Liberado"
+    }
+  },
+  "TDDLGC": {
+    "description": "Dicionário de dados: campos das ligações",
+    "columns": {
+      "NUINSTORIG": "Instância de origem",
+      "NUINSTDEST": "Instância de destino",
+      "NUCAMPOORIG": "Campo de origem",
+      "NUCAMPODEST": "Campo de destino",
+      "ORDEM": "Ordem"
     }
   }
 }

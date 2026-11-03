@@ -307,9 +307,55 @@ export function createDatabase(dictionary) {
   const rows = build();
   // TDDTAB e TDDCAM saem do próprio dicionário, para nunca divergirem dele.
   rows.TDDTAB = Object.entries(dictionary).map(([NOMETAB, [DESCRTAB]]) => ({ NOMETAB, DESCRTAB, TIPONUMERACAO: "M" }));
+  const fieldType = (name) =>
+    /^(DT|DH)/.test(name) ? ["D", null] : /^VLR|^QTD|^PERC/.test(name) ? ["F", 15] : /^(COD|NU|NUM)/.test(name) ? ["I", 10] : ["S", 100];
   rows.TDDCAM = Object.entries(dictionary).flatMap(([NOMETAB, [, columns]]) =>
-    Object.entries(columns).map(([NOMECAMPO, DESCRCAMPO]) => ({ NOMETAB, NOMECAMPO, DESCRCAMPO, TIPCAMPO: "S" })),
+    Object.entries(columns).map(([NOMECAMPO, DESCRCAMPO]) => ({
+      NOMETAB,
+      NOMECAMPO,
+      DESCRCAMPO,
+      TIPCAMPO: fieldType(NOMECAMPO)[0],
+      TAMANHO: fieldType(NOMECAMPO)[1],
+    })),
   );
+  rows.TDDCAM.forEach((row, i) => (row.NUCAMPO = i + 1));
+  const fieldId = (tab, col) => rows.TDDCAM.find((r) => r.NOMETAB === tab && r.NOMECAMPO === col)?.NUCAMPO;
+
+  // Opções de domínio de alguns campos (TDDOPC), só onde a coluna existe no dicionário.
+  const OPTIONS = {
+    "TGFPAR.TIPPESSOA": [["F", "Física"], ["J", "Jurídica"]],
+    "TGFPAR.CLIENTE": [["S", "Sim"], ["N", "Não"]],
+    "TGFPAR.FORNECEDOR": [["S", "Sim"], ["N", "Não"]],
+    "TGFCAB.TIPMOV": [["V", "Venda"], ["C", "Compra"], ["D", "Devolução de venda"], ["P", "Pedido"]],
+    "TGFFIN.RECDESP": [["1", "Receita"], ["-1", "Despesa"]],
+  };
+  rows.TDDOPC = Object.entries(OPTIONS).flatMap(([key, list]) => {
+    const [tab, col] = key.split(".");
+    const NUCAMPO = fieldId(tab, col);
+    return NUCAMPO ? list.map(([VALOR, OPCAO], i) => ({ NUCAMPO, VALOR, OPCAO, ORDEM: i + 1 })) : [];
+  });
+
+  // Ligações: cada tabela que tem a chave (1ª coluna) de outra aponta para ela por essa coluna.
+  const names = Object.keys(dictionary).filter((n) => !n.startsWith("TDD"));
+  rows.TDDINS = names.map((NOMETAB, i) => ({ NUINSTANCIA: i + 1, NOMETAB }));
+  const instance = (tab) => rows.TDDINS.find((r) => r.NOMETAB === tab).NUINSTANCIA;
+  rows.TDDLIG = [];
+  rows.TDDLGC = [];
+  for (const target of names) {
+    const key = Object.keys(dictionary[target][1])[0];
+    for (const source of names) {
+      if (source === target || !(key in dictionary[source][1])) continue;
+      const [NUINSTORIG, NUINSTDEST] = [instance(source), instance(target)];
+      rows.TDDLIG.push({ NUINSTORIG, NUINSTDEST, LIBERADO: "S" });
+      rows.TDDLGC.push({
+        NUINSTORIG,
+        NUINSTDEST,
+        NUCAMPOORIG: fieldId(source, key),
+        NUCAMPODEST: fieldId(target, key),
+        ORDEM: 1,
+      });
+    }
+  }
   for (const [name, [, columns]] of Object.entries(dictionary)) {
     const names = Object.keys(columns);
     db.exec(`CREATE TABLE ${name} (${names.join(", ")})`);
