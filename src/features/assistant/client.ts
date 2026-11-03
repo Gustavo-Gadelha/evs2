@@ -1,8 +1,14 @@
 import type { ApiError } from "@/lib/types";
 import type { ChatEvent, ChatRequest } from "./protocol";
 
-// Lê a resposta NDJSON de /api/assistant/chat. Chama `onDelta` a cada pedaço de texto; lança `Error` em falha.
-export async function streamChat(body: ChatRequest, signal: AbortSignal, onDelta: (text: string) => void) {
+// Lê a resposta NDJSON de /api/assistant/chat. Chama `onDelta` a cada pedaço de texto e `onStep` a cada etapa do
+// agente; lança `Error` em falha.
+export async function streamChat(
+  body: ChatRequest,
+  signal: AbortSignal,
+  onDelta: (text: string) => void,
+  onStep?: (text: string) => void,
+) {
   const response = await fetch("/api/assistant/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -22,6 +28,7 @@ export async function streamChat(body: ChatRequest, signal: AbortSignal, onDelta
     if (!line.trim()) return;
     const event = JSON.parse(line) as ChatEvent;
     if (event.type === "delta") onDelta(event.text);
+    else if (event.type === "step") onStep?.(event.text);
     else if (event.type === "error") throw new Error(event.message);
   }
 

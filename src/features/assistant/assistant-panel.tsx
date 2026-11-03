@@ -40,7 +40,12 @@ type Props = {
   onChatChange: (tabId: string, update: (chat: ChatMessage[]) => ChatMessage[]) => void;
   onUseSql: (sql: string) => void;
   onOpenInNewTab: (sql: string) => void;
+  limitStyle: "fetch" | "rownum";
+  // Pedido de "Corrigir com IA" vindo da área de resultado: o `id` muda a cada clique.
+  fix: { id: number; error: string } | null;
 };
+
+const FIX_MESSAGE = "Corrija o SQL do editor: o Oracle devolveu um erro.";
 
 const SUGGESTIONS = [
   "Notas de venda do último mês com o nome do parceiro",
@@ -107,7 +112,17 @@ function AssistantMessage({
   return (
     <Message>
       <MessageContent>
-        {parts.length === 0 && pending && <p className="text-muted-foreground">Pensando…</p>}
+        {pending && message.steps && message.steps.length > 0 && (
+          <ol className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+            {message.steps.map((step, index) => (
+              <li key={index} className={index === message.steps!.length - 1 ? "text-foreground" : ""}>
+                {index === message.steps!.length - 1 ? "▸ " : "✓ "}
+                {step}
+              </li>
+            ))}
+          </ol>
+        )}
+        {parts.length === 0 && pending && !message.steps?.length && <p className="text-muted-foreground">Pensando…</p>}
         {parts.map((part, index) =>
           part.kind === "text" ? (
             <p key={index} className="whitespace-pre-wrap">
@@ -128,7 +143,7 @@ function AssistantMessage({
   );
 }
 
-export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpenInNewTab }: Props) {
+export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpenInNewTab, limitStyle, fix }: Props) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const abort = useRef<AbortController | null>(null);
@@ -137,7 +152,15 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
   // Trocar de aba de consulta desmonta o painel: a resposta em andamento é interrompida.
   useEffect(() => () => abort.current?.abort(), []);
 
-  async function send(text: string) {
+  // O pedido de correção chega uma vez por `id`; o painel fica montado (keepMounted), então o efeito dispara na hora.
+  const handledFix = useRef<number | null>(fix?.id ?? null);
+  useEffect(() => {
+    if (!fix || fix.id === handledFix.current) return;
+    handledFix.current = fix.id;
+    void send(FIX_MESSAGE, fix.error);
+  });
+
+  async function send(text: string, error?: string) {
     const content = text.trim();
     if (!content || busy) return;
     const user: ChatMessage = { id: crypto.randomUUID(), role: "user", content };
@@ -150,12 +173,21 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
     abort.current = controller;
     setBusy(true);
     try {
-      await streamChat({ messages: history, sql }, controller.signal, (delta) =>
-        onChatChange(tabId, (current) =>
-          current.map((message) =>
-            message.id === reply.id ? { ...message, content: message.content + delta } : message,
+      await streamChat(
+        { messages: history, sql, limitStyle, error },
+        controller.signal,
+        (delta) =>
+          onChatChange(tabId, (current) =>
+            current.map((message) =>
+              message.id === reply.id ? { ...message, content: message.content + delta } : message,
+            ),
           ),
-        ),
+        (step) =>
+          onChatChange(tabId, (current) =>
+            current.map((message) =>
+              message.id === reply.id ? { ...message, steps: [...(message.steps ?? []), step] } : message,
+            ),
+          ),
       );
     } catch (err) {
       if (!controller.signal.aborted) {
@@ -165,8 +197,13 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
         });
       }
     } finally {
-      // Resposta vazia (erro antes do primeiro pedaço ou interrupção imediata) não fica na conversa.
-      onChatChange(tabId, (current) => current.filter((message) => message.id !== reply.id || message.content));
+      // Resposta vazia (erro antes do primeiro pedaço ou interrupção imediata) não fica na conversa;
+      // as etapas só valem enquanto a resposta chega.
+      onChatChange(tabId, (current) =>
+        current
+          .filter((message) => message.id !== reply.id || message.content)
+          .map((message) => (message.id === reply.id ? { ...message, steps: undefined } : message)),
+      );
       abort.current = null;
       setBusy(false);
     }

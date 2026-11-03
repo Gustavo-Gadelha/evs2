@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDownIcon, UserRoundIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 type Props = {
   status: AuthStatus | null;
@@ -20,6 +21,8 @@ type Props = {
   onSelectProfile: (id: string | null) => void;
   onLogin: () => void;
   onLogout: () => void;
+  // Espaço extra no canto direito, antes do seletor de perfil (selo da IA).
+  extra?: ReactNode;
 };
 
 export function AuthHeader({
@@ -31,6 +34,7 @@ export function AuthHeader({
   onSelectProfile,
   onLogin,
   onLogout,
+  extra,
 }: Props) {
   const authenticated = status?.authenticated ?? false;
   const hasProfile = status?.profile != null;
@@ -50,6 +54,7 @@ export function AuthHeader({
       </code>
 
       <div className="ml-auto flex flex-wrap items-center gap-3">
+        {extra}
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<Button variant="secondary" size="sm" type="button" className="max-w-48 justify-between" />}

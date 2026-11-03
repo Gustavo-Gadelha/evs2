@@ -31,6 +31,7 @@ import { ResultView } from "@/features/results/result-view";
 import { Sidebar } from "@/features/history/components/sidebar";
 import { SqlEditor } from "@/features/query/components/sql-editor";
 import { AssistantPanel } from "@/features/assistant/assistant-panel";
+import { AiStatus } from "@/features/assistant/components/ai-status";
 import type { ChatMessage } from "@/features/assistant/protocol";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
@@ -56,6 +57,8 @@ export function Explorer() {
   const [profileState, setProfileState] = useState<ProfilesState>({ profiles: [], activeId: null });
   const [saved, setSaved] = useState<SavedQuery[]>([]);
   const [mode, setMode] = useState<"builder" | "assistant">("builder");
+  // "Corrigir com IA": pedido de correção do erro da aba, entregue ao painel do assistente.
+  const [fix, setFix] = useState<{ id: number; tabId: string; error: string } | null>(null);
 
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
   const { state: queryState, sql, manual, result, error, running } = active;
@@ -311,6 +314,7 @@ export function Explorer() {
         onSelectProfile={(id) => void selectProfile(id)}
         onLogin={() => authAction("/api/sankhya/login")}
         onLogout={() => authAction("/api/sankhya/logout")}
+        extra={<AiStatus profileId={status?.profile?.id ?? null} />}
       />
       {dictionaryOpen && (
         <DictionaryBrowser
@@ -370,6 +374,8 @@ export function Explorer() {
                 onChatChange={changeChat}
                 onUseSql={changeSql}
                 onOpenInNewTab={(next) => addTab({ sql: next, manual: true })}
+                limitStyle={queryState.limit?.style ?? "fetch"}
+                fix={fix?.tabId === active.id ? fix : null}
               />
             </TabsContent>
           </main>
@@ -385,7 +391,15 @@ export function Explorer() {
               onRun={run}
               onSave={(name) => void persist(savedQueries.save(name, { state: queryState, sql, manual }), setSaved)}
             />
-            <ResultView result={result} error={error} />
+            <ResultView
+              result={result}
+              error={error}
+              onFixWithAi={() => {
+                if (!error) return;
+                setMode("assistant");
+                setFix({ id: Date.now(), tabId: active.id, error });
+              }}
+            />
           </div>
         </div>
       </Tabs>

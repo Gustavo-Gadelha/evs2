@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { SparklesIcon } from "lucide-react";
 import { toast } from "sonner";
 
 // Cada resultado ganha uma tabela nova, sem herdar filtros e ordenação do anterior.
@@ -29,9 +30,9 @@ function toCsv({ columns, rows }: QueryResult): string {
   return lines.map((line) => line.join(",")).join("\n");
 }
 
-type Props = { result: QueryResult | null; error: string | null };
+type Props = { result: QueryResult | null; error: string | null; onFixWithAi?: () => void };
 
-export function ResultView({ result, error }: Props) {
+export function ResultView({ result, error, onFixWithAi }: Props) {
   const [view, setView] = useState<"table" | "json">("table");
   const json = useMemo(() => (result && view === "json" ? JSON.stringify(result.raw, null, 2) : ""), [result, view]);
 
@@ -41,6 +42,11 @@ export function ResultView({ result, error }: Props) {
         <AlertTitle className="label text-destructive">Erro</AlertTitle>
         <AlertDescription>
           <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-destructive">{error}</pre>
+          {onFixWithAi && (
+            <Button className="mt-3" variant="outline" size="xs" type="button" onClick={onFixWithAi}>
+              <SparklesIcon /> Corrigir com IA
+            </Button>
+          )}
         </AlertDescription>
       </Alert>
     );
