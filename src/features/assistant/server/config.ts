@@ -33,7 +33,9 @@ const PRESETS = {
 const blank = (v: unknown) => (v === "" ? undefined : v);
 const text = z.preprocess(blank, z.string().trim().min(1).optional());
 const int = z.preprocess(blank, z.coerce.number().int().positive().optional());
-const bool = z.preprocess(blank, z.enum(["true", "false"]).optional());
+// Para contagens em que 0 é válido (AI_MAX_FIX_ATTEMPTS=0: sem tentativa de correção automática).
+const nonNegativeInt = z.preprocess(blank, z.coerce.number().int().nonnegative().optional());
+const bool =z.preprocess(blank, z.enum(["true", "false"]).optional());
 
 const envSchema = z.object({
   AI_PRESET: z.preprocess(blank, z.enum(["gpu", "cpu"]).default("gpu")),
@@ -45,7 +47,7 @@ const envSchema = z.object({
   AI_TOP_TABLES: int,
   AI_MAX_COLUMNS_PER_TABLE: int,
   AI_MAX_STEPS: int,
-  AI_MAX_FIX_ATTEMPTS: int,
+  AI_MAX_FIX_ATTEMPTS: nonNegativeInt,
   AI_TIMEOUT_MS: int,
 });
 
