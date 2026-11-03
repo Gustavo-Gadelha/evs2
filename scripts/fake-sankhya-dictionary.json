@@ -1,0 +1,311 @@
+{
+  "TGFCAB": {
+    "description": "Cabeçalho da Nota",
+    "columns": {
+      "NUNOTA": "Número único",
+      "NUMNOTA": "Número da nota",
+      "CODPARC": "Código do parceiro",
+      "CODVEND": "Código do vendedor",
+      "CODEMP": "Código da empresa",
+      "CODTIPOPER": "Código do tipo de operação",
+      "TIPMOV": "Tipo de movimento (V = venda, C = compra, P = pedido)",
+      "DTNEG": "Data de negociação",
+      "VLRNOTA": "Valor total da nota",
+      "STATUSNOTA": "Status da nota"
+    }
+  },
+  "TGFITE": {
+    "description": "Itens da Nota",
+    "columns": {
+      "NUNOTA": "Número único da nota",
+      "SEQUENCIA": "Sequência do item",
+      "CODPROD": "Código do produto",
+      "QTDNEG": "Quantidade negociada",
+      "VLRUNIT": "Valor unitário",
+      "VLRTOT": "Valor total do item"
+    }
+  },
+  "TGFPAR": {
+    "description": "Parceiros (clientes e fornecedores)",
+    "columns": {
+      "CODPARC": "Código do parceiro",
+      "NOMEPARC": "Nome do parceiro",
+      "CGC_CPF": "CNPJ ou CPF",
+      "TIPPESSOA": "Tipo de pessoa",
+      "CODCID": "Código da cidade",
+      "CODVEND": "Vendedor padrão",
+      "CLIENTE": "É cliente (S/N)",
+      "FORNECEDOR": "É fornecedor (S/N)",
+      "ATIVO": "Ativo (S/N)"
+    }
+  },
+  "TGFVEN": {
+    "description": "Vendedores",
+    "columns": {
+      "CODVEND": "Código do vendedor",
+      "APELIDO": "Nome do vendedor",
+      "ATIVO": "Ativo (S/N)",
+      "CODGER": "Código do gerente",
+      "COMVENDA": "Percentual de comissão"
+    }
+  },
+  "TGFPRO": {
+    "description": "Produtos",
+    "columns": {
+      "CODPROD": "Código do produto",
+      "DESCRPROD": "Descrição do produto",
+      "ESTMIN": "Estoque mínimo",
+      "ATIVO": "Ativo (S/N)",
+      "CODGRUPOPROD": "Código do grupo de produto",
+      "CODVOL": "Unidade de medida",
+      "MARCA": "Marca",
+      "PESOBRUTO": "Peso bruto"
+    }
+  },
+  "TGFEST": {
+    "description": "Estoque",
+    "columns": {
+      "CODPROD": "Código do produto",
+      "CODEMP": "Código da empresa",
+      "CODLOCAL": "Local",
+      "ESTOQUE": "Quantidade em estoque",
+      "RESERVADO": "Quantidade reservada",
+      "DTATUAL": "Data da última atualização"
+    }
+  },
+  "TSIEMP": {
+    "description": "Empresas",
+    "columns": {
+      "CODEMP": "Código da empresa",
+      "NOMEFANTASIA": "Nome fantasia",
+      "RAZAOSOCIAL": "Razão social",
+      "CGC": "CNPJ",
+      "CODCID": "Código da cidade"
+    }
+  },
+  "TGFTOP": {
+    "description": "Tipos de Operação",
+    "columns": {
+      "CODTIPOPER": "Código do tipo de operação",
+      "DESCROPER": "Descrição da operação",
+      "TIPMOV": "Tipo de movimento",
+      "ATUALEST": "Atualiza estoque (B = baixa, E = entrada, N = não)",
+      "ATUALFIN": "Gera financeiro (S/N)"
+    }
+  },
+  "TGFCUS": {
+    "description": "Custos dos Produtos",
+    "columns": {
+      "CODPROD": "Código do produto",
+      "CODEMP": "Código da empresa",
+      "DTATUAL": "Data do custo",
+      "CUSMED": "Custo médio",
+      "CUSREP": "Custo de reposição",
+      "CUSSEMICM": "Custo sem ICMS"
+    }
+  },
+  "TGFLOC": {
+    "description": "Locais de Estoque",
+    "columns": {
+      "CODLOCAL": "Código do local",
+      "DESCRLOCAL": "Descrição do local",
+      "CODEMP": "Código da empresa",
+      "ATIVO": "Ativo (S/N)"
+    }
+  },
+  "TGFGRU": {
+    "description": "Grupos de Produtos",
+    "columns": {
+      "CODGRUPOPROD": "Código do grupo",
+      "DESCRGRUPOPROD": "Descrição do grupo",
+      "CODGRUPAI": "Grupo pai",
+      "ANALITICO": "Grupo analítico (S/N)"
+    }
+  },
+  "TGFMAR": {
+    "description": "Marcas",
+    "columns": {
+      "CODIGO": "Código da marca",
+      "DESCRICAO": "Nome da marca"
+    }
+  },
+  "TGFVAR": {
+    "description": "Variações de Notas (atendimento de pedidos)",
+    "columns": {
+      "NUNOTA": "Nota de origem",
+      "SEQUENCIA": "Sequência do item de origem",
+      "NUNOTAORIG": "Nota que atendeu",
+      "SEQUENCIAORIG": "Sequência do item que atendeu",
+      "QTDATENDIDA": "Quantidade atendida"
+    }
+  },
+  "TGFEXC": {
+    "description": "Exceções de preço",
+    "columns": {
+      "NUTAB": "Número da tabela",
+      "CODPROD": "Código do produto",
+      "VLRVENDA": "Valor de venda",
+      "TIPO": "Tipo da exceção"
+    }
+  },
+  "TGFTAB": {
+    "description": "Tabelas de Preço",
+    "columns": {
+      "NUTAB": "Número da tabela",
+      "CODTAB": "Código da tabela",
+      "DTVIGOR": "Data de vigência",
+      "PERCENTUAL": "Percentual aplicado"
+    }
+  },
+  "TGFCPL": {
+    "description": "Complemento de Parceiros",
+    "columns": {
+      "CODPARC": "Código do parceiro",
+      "LIMCRED": "Limite de crédito",
+      "SUGTIPNEGSAID": "Tipo de negociação sugerida",
+      "DTCAD": "Data de cadastro"
+    }
+  },
+  "TGFTPV": {
+    "description": "Tipos de Negociação",
+    "columns": {
+      "CODTIPVENDA": "Código do tipo de negociação",
+      "DESCRTIPVENDA": "Descrição",
+      "TAXAJURO": "Taxa de juros",
+      "ATIVO": "Ativo (S/N)"
+    }
+  },
+  "TGFDIN": {
+    "description": "Impostos da Nota",
+    "columns": {
+      "NUNOTA": "Número único da nota",
+      "SEQUENCIA": "Sequência do item",
+      "CODIMP": "Código do imposto",
+      "BASE": "Base de cálculo",
+      "ALIQUOTA": "Alíquota",
+      "VALOR": "Valor do imposto"
+    }
+  },
+  "TGFFIN": {
+    "description": "Financeiro (títulos a pagar e a receber)",
+    "columns": {
+      "NUFIN": "Número único do título",
+      "NUNOTA": "Nota de origem",
+      "CODEMP": "Código da empresa",
+      "CODPARC": "Código do parceiro",
+      "DTNEG": "Data de negociação",
+      "DTVENC": "Data de vencimento",
+      "DHBAIXA": "Data e hora da baixa",
+      "VLRDESDOB": "Valor do desdobramento",
+      "VLRBAIXA": "Valor baixado",
+      "RECDESP": "Receita ou despesa (1 = receita, -1 = despesa)",
+      "CODNAT": "Código da natureza",
+      "CODBCO": "Código do banco"
+    }
+  },
+  "TSINAT": {
+    "description": "Naturezas",
+    "columns": {
+      "CODNAT": "Código da natureza",
+      "DESCRNAT": "Descrição da natureza",
+      "CODNATPAI": "Natureza pai",
+      "ANALITICA": "Natureza analítica (S/N)"
+    }
+  },
+  "TSIBCO": {
+    "description": "Bancos",
+    "columns": {
+      "CODBCO": "Código do banco",
+      "NOMEBCO": "Nome do banco",
+      "ABREVIATURA": "Abreviatura"
+    }
+  },
+  "TSICTA": {
+    "description": "Contas bancárias",
+    "columns": {
+      "CODCTABCOINT": "Código da conta",
+      "DESCRICAO": "Descrição da conta",
+      "CODBCO": "Código do banco",
+      "CODEMP": "Código da empresa",
+      "AGENCIA": "Agência",
+      "NUMCONTA": "Número da conta"
+    }
+  },
+  "TSIUSU": {
+    "description": "Usuários",
+    "columns": {
+      "CODUSU": "Código do usuário",
+      "NOMEUSU": "Login do usuário",
+      "CODVEND": "Vendedor vinculado",
+      "CODEMP": "Empresa padrão",
+      "DTLIMACESSO": "Data limite de acesso"
+    }
+  },
+  "TSICUS": {
+    "description": "Centros de Resultado",
+    "columns": {
+      "CODCENCUS": "Código do centro de resultado",
+      "DESCRCENCUS": "Descrição",
+      "ATIVO": "Ativo (S/N)"
+    }
+  },
+  "TSIBAI": {
+    "description": "Bairros",
+    "columns": {
+      "CODBAI": "Código do bairro",
+      "NOMEBAI": "Nome do bairro",
+      "CODCID": "Código da cidade"
+    }
+  },
+  "TSICID": {
+    "description": "Cidades",
+    "columns": {
+      "CODCID": "Código da cidade",
+      "NOMECID": "Nome da cidade",
+      "UF": "Código da UF",
+      "CODREG": "Código da região"
+    }
+  },
+  "TSIUFS": {
+    "description": "Unidades Federativas",
+    "columns": {
+      "CODUF": "Código da UF",
+      "UF": "Sigla",
+      "DESCRICAO": "Nome do estado"
+    }
+  },
+  "TSIREG": {
+    "description": "Regiões",
+    "columns": {
+      "CODREG": "Código da região",
+      "NOMEREG": "Nome da região"
+    }
+  },
+  "TSIPAR": {
+    "description": "Parâmetros do sistema",
+    "columns": {
+      "CHAVE": "Chave do parâmetro",
+      "DESCRICAO": "Descrição",
+      "TIPO": "Tipo do valor",
+      "INTEIRO": "Valor inteiro",
+      "TEXTO": "Valor texto"
+    }
+  },
+  "TDDTAB": {
+    "description": "Dicionário de dados: tabelas",
+    "columns": {
+      "NOMETAB": "Nome da tabela",
+      "DESCRTAB": "Descrição da tabela",
+      "TIPONUMERACAO": "Tipo de numeração"
+    }
+  },
+  "TDDCAM": {
+    "description": "Dicionário de dados: campos",
+    "columns": {
+      "NOMETAB": "Nome da tabela",
+      "NOMECAMPO": "Nome do campo",
+      "DESCRCAMPO": "Descrição do campo",
+      "TIPCAMPO": "Tipo do campo"
+    }
+  }
+}

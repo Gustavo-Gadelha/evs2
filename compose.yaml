@@ -40,6 +40,26 @@ services:
       timeout: 5s
       retries: 20
 
+  # Sankhya falso (scripts/fake-sankhya.mjs): só para verificação, sem credenciais nem dados reais. Cadastre um perfil
+  # com baseUrl http://sankhya-falso:8000 para diferenciá-lo do Sankhya real.
+  sankhya-falso:
+    image: node:26-alpine
+    working_dir: /app
+    command: ["node", "fake-sankhya.mjs", "8000"]
+    environment:
+      HOST: 0.0.0.0
+    volumes:
+      - ./scripts/fake-sankhya.mjs:/app/fake-sankhya.mjs:ro
+      - ./scripts/fake-sankhya-dictionary.json:/app/fake-sankhya-dictionary.json:ro
+    ports:
+      # Só loopback, para testar fora do compose; nunca "4010:8000".
+      - "127.0.0.1:4010:8000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--post-data=", "http://127.0.0.1:8000/login"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
   # Os modelos não são baixados aqui: rode `pnpm ai:pull-chat` e `pnpm ai:pull-embed` (uma vez; ficam no volume `ollama`).
   erp-assistant:
     build:

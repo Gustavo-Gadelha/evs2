@@ -1,63 +1,37 @@
 // Sankhya falso para verificar o assistente sem tocar no ERP real: `node scripts/fake-sankhya.mjs [porta]`
-// (padrão 4010). Responde ao login e ao `DbExplorerSP.executeQuery` com um dicionário pequeno de fixture
-// (TDDTAB/TDDCAM) e valida consultas como o Oracle faria, só pelos nomes: tabela ou coluna que não existe devolve
+// (padrão 4010). Emite um token para qualquer combinação de credenciais não vazias (sem checar valores) e responde ao
+// `DbExplorerSP.executeQuery` com o dicionário de fixture (TDDTAB/TDDCAM); valida consultas como o Oracle faria, só pelos nomes: tabela ou coluna que não existe devolve
 // `status: "0"` com um ORA-00942/ORA-00904. Nunca devolve linhas de dados. Cadastre um perfil com baseUrl
-// http://127.0.0.1:<porta> (dentro de um container: http://host.docker.internal:<porta>).
+// http://127.0.0.1:<porta>. No compose roda como o serviço `sankhya-falso` (porta 8000): use http://sankhya-falso:8000.
 
+import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
+
+const CREDENTIAL_HEADERS = ["appkey", "token", "username", "password"];
+// Tokens emitidos pelo login; reiniciar o falso os invalida (o app refaz o login ao receber 401).
+const tokens = new Set();
 
 const PORT = Number(process.argv[2] ?? 4010);
 // Em container, HOST=0.0.0.0 para o app alcançá-lo pela rede do compose.
 const HOST = process.env.HOST ?? "127.0.0.1";
 
-const DICTIONARY = {
-  TGFCAB: [
-    "Cabeçalho da Nota",
-    {
-      NUNOTA: "Número único",
-      NUMNOTA: "Número da nota",
-      CODPARC: "Código do parceiro",
-      CODVEND: "Código do vendedor",
-      CODEMP: "Código da empresa",
-      CODTIPOPER: "Código do tipo de operação",
-      TIPMOV: "Tipo de movimento (V = venda, C = compra, P = pedido)",
-      DTNEG: "Data de negociação",
-      VLRNOTA: "Valor total da nota",
-      STATUSNOTA: "Status da nota",
-    },
-  ],
-  TGFITE: [
-    "Itens da Nota",
-    {
-      NUNOTA: "Número único da nota",
-      SEQUENCIA: "Sequência do item",
-      CODPROD: "Código do produto",
-      QTDNEG: "Quantidade negociada",
-      VLRUNIT: "Valor unitário",
-      VLRTOT: "Valor total do item",
-    },
-  ],
-  TGFPAR: [
-    "Parceiros (clientes e fornecedores)",
-    {
-      CODPARC: "Código do parceiro",
-      NOMEPARC: "Nome do parceiro",
-      CGC_CPF: "CNPJ ou CPF",
-      TIPPESSOA: "Tipo de pessoa",
-    },
-  ],
-  TGFVEN: ["Vendedores", { CODVEND: "Código do vendedor", APELIDO: "Nome do vendedor", ATIVO: "Ativo (S/N)" }],
-  TGFPRO: [
-    "Produtos",
-    { CODPROD: "Código do produto", DESCRPROD: "Descrição do produto", ESTMIN: "Estoque mínimo", ATIVO: "Ativo (S/N)" },
-  ],
-  TGFEST: [
-    "Estoque",
-    { CODPROD: "Código do produto", CODEMP: "Código da empresa", CODLOCAL: "Local", ESTOQUE: "Quantidade em estoque" },
-  ],
-  TSIEMP: ["Empresas", { CODEMP: "Código da empresa", NOMEFANTASIA: "Nome fantasia", RAZAOSOCIAL: "Razão social" }],
-  TGFTOP: ["Tipos de Operação", { CODTIPOPER: "Código do tipo de operação", DESCROPER: "Descrição da operação" }],
-};
+// Fixture em scripts/fake-sankhya-dictionary.json: { TABELA: { description, columns: { CAMPO: descrição } } }.
+const DICTIONARY = loadDictionary();
+
+function loadDictionary() {
+  const file = new URL("./fake-sankhya-dictionary.json", import.meta.url);
+  const raw = JSON.parse(readFileSync(file, "utf8"));
+  const dictionary = {};
+  for (const [table, def] of Object.entries(raw)) {
+    const ok = typeof def?.description === "string" && def.columns && typeof def.columns === "object";
+    const names = [table, ...Object.keys(def?.columns ?? {})];
+    if (!ok || names.some((n) => !/^[A-Z][A-Z0-9_$#]*$/.test(n)) || Object.values(def.columns).some((d) => typeof d !== "string"))
+      throw new Error(`fake-sankhya-dictionary.json: definição inválida em ${table}`);
+    dictionary[table] = [def.description, def.columns];
+  }
+  return dictionary;
+}
 
 const KEYWORDS = new Set(
   `SELECT FROM WHERE AND OR NOT IN IS NULL AS ON JOIN INNER LEFT RIGHT FULL OUTER CROSS GROUP BY ORDER HAVING DISTINCT
@@ -129,7 +103,10 @@ function execute(sql) {
   const cols = s.match(/^SELECT NOMECAMPO, DESCRCAMPO FROM TDDCAM WHERE NOMETAB = '([A-Z0-9_$#]+)'/i);
   if (cols) {
     const table = DICTIONARY[cols[1].toUpperCase()];
-    return rowsOf(["NOMECAMPO", "DESCRCAMPO"], table ? Object.entries(table[1]) : []);
+    return rowsOf(
+      ["NOMECAMPO", "DESCRCAMPO"],
+      table ? Object.entries(table[1]).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0)) : [],
+    );
   }
   if (/^(INSERT|UPDATE|DELETE|MERGE|DROP|ALTER|CREATE|TRUNCATE)\b/i.test(s)) {
     return { status: "0", statusMessage: "A fake não executa escrita." };
@@ -148,8 +125,24 @@ createServer((req, res) => {
       res.writeHead(status, { "Content-Type": "application/json" }),
       res.end(JSON.stringify(json))
     );
-    if (url.pathname.endsWith("/login")) return send(200, { bearerToken: "fake-token" });
+    if (url.pathname.endsWith("/login")) {
+      // Aceita qualquer combinação de credenciais, desde que as quatro venham preenchidas.
+      if (CREDENTIAL_HEADERS.some((h) => !String(req.headers[h] ?? "").trim())) {
+        return send(401, { error: "Credenciais ausentes: informe appkey, token, username e password." });
+      }
+      const bearerToken = `fake-${randomUUID()}`;
+      tokens.add(bearerToken);
+      return send(200, { bearerToken });
+    }
     if (url.pathname.endsWith("/service.sbr")) {
+      const bearer = /^Bearer (.+)$/.exec(req.headers.authorization ?? "")?.[1] ?? "";
+      if (url.searchParams.get("serviceName") === "MobileLoginSP.logout") {
+        tokens.delete(bearer);
+        return send(200, {});
+      }
+      if (!tokens.has(bearer)) {
+        return send(401, { status: "0", statusMessage: "Não autenticado." });
+      }
       try {
         return send(200, execute(String(JSON.parse(body).requestBody?.sql ?? "")));
       } catch {

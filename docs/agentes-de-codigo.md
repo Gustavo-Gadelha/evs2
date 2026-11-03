@@ -42,4 +42,4 @@
 
 **Verificação:** `pnpm typecheck`, `test:ai` (8) e `test:sql` (41) passam. Num Postgres isolado (`snk-verify`, volume próprio) as 3 migrations aplicam; as consultas de vetor, texto sem acento e prefixo de coluna retornam o esperado com vetores de 3 dimensões; `ai:export` e `ai:import` fazem o ciclo completo e o import recusa modelo diferente.
 
-**Pendente:** o critério de aceite da fase (5 perguntas com tabelas, scores e tempo de embedding nos dois presets) exige o `bge-m3` baixado no Ollama e um Sankhya falso com `TDDTAB`/`TDDCAM`, que ainda não existe no repositório. Não rodei o fluxo completo (indexar pela rota, `/api/assistant/search`).
+**Pendente:** o critério de aceite da fase (5 perguntas com tabelas, scores e tempo de embedding nos dois presets) exige o `bge-m3` baixado no Ollama e o Sankhya falso (`scripts/fake-sankhya.mjs`, serviço `sankhya-falso` do compose). Não rodei o fluxo completo (indexar pela rota, `/api/assistant/search`).
