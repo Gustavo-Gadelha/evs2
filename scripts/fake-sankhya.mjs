@@ -1,12 +1,13 @@
 // Sankhya falso para verificar o assistente sem tocar no ERP real: `node scripts/fake-sankhya.mjs [porta]`
 // (padrão 4010). Emite um token para qualquer combinação de credenciais não vazias (sem checar valores) e responde ao
 // `DbExplorerSP.executeQuery` com o dicionário de fixture (TDDTAB/TDDCAM); valida consultas como o Oracle faria, só pelos nomes: tabela ou coluna que não existe devolve
-// `status: "0"` com um ORA-00942/ORA-00904. Nunca devolve linhas de dados. Cadastre um perfil com baseUrl
+// `status: "0"` com um ORA-00942/ORA-00904. Devolve linhas fictícias (scripts/fake-sankhya-data.mjs) executando o SELECT num SQLite em memória, só leitura. Cadastre um perfil com baseUrl
 // http://127.0.0.1:<porta>. No compose roda como o serviço `sankhya-falso` (porta 8000): use http://sankhya-falso:8000.
 
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
+import { createDatabase, runQuery } from "./fake-sankhya-data.mjs";
 
 const CREDENTIAL_HEADERS = ["appkey", "token", "username", "password"];
 // Tokens emitidos pelo login; reiniciar o falso os invalida (o app refaz o login ao receber 401).
@@ -18,6 +19,7 @@ const HOST = process.env.HOST ?? "127.0.0.1";
 
 // Fixture em scripts/fake-sankhya-dictionary.json: { TABELA: { description, columns: { CAMPO: descrição } } }.
 const DICTIONARY = loadDictionary();
+const db = createDatabase(DICTIONARY);
 
 function loadDictionary() {
   const file = new URL("./fake-sankhya-dictionary.json", import.meta.url);
@@ -61,7 +63,12 @@ function validate(sql) {
     if (alias && !KEYWORDS.has(alias)) tables.set(alias, table);
   }
 
-  const aliases = new Set([...inner.matchAll(/\bAS\s+"?([A-Z_][A-Z0-9_$#]*)"?/gi)].map((m) => m[1].toUpperCase()));
+  const aliases = new Set(
+    [
+      ...inner.matchAll(/\bAS\s+"?([A-Z_][A-Z0-9_$#]*)"?/gi),
+      ...inner.matchAll(/\)\s+"?([A-Z_][A-Z0-9_$#]*)"?\s*(?:,|\bFROM\b)/gi), // alias sem AS depois de função
+    ].map((m) => m[1].toUpperCase()),
+  );
   const known = new Set([...tables.values()].flatMap((t) => (DICTIONARY[t] ? Object.keys(DICTIONARY[t][1]) : [])));
 
   for (const m of inner.matchAll(
@@ -113,7 +120,13 @@ function execute(sql) {
   }
   const error = validate(sql);
   if (error) return { status: "0", statusMessage: error };
-  return rowsOf(["OK"], []); // consulta aceita; a fake nunca devolve dados
+  try {
+    const { fields, rows } = runQuery(db, sql);
+    return rowsOf(fields, rows);
+  } catch (error) {
+    // Sintaxe que o SQLite não entende (Oracle além do que a tradução cobre).
+    return { status: "0", statusMessage: `ORA-00933: comando SQL não finalizado adequadamente (${error.message})` };
+  }
 }
 
 createServer((req, res) => {

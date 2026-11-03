@@ -51,6 +51,7 @@ services:
     volumes:
       - ./scripts/fake-sankhya.mjs:/app/fake-sankhya.mjs:ro
       - ./scripts/fake-sankhya-dictionary.json:/app/fake-sankhya-dictionary.json:ro
+      - ./scripts/fake-sankhya-data.mjs:/app/fake-sankhya-data.mjs:ro
     ports:
       # Só loopback, para testar fora do compose; nunca "4010:8000".
       - "127.0.0.1:4010:8000"
