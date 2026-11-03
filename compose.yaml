@@ -7,14 +7,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
       POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no .env}
+    # O Postgres escuta na mesma porta dentro e fora do container (POSTGRES_PORT).
+    command: ["postgres", "-p", "${POSTGRES_PORT:-5432}"]
     ports:
       # Só loopback, para o `pnpm dev` e o psql do host; nunca "5432:5432".
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}"
     volumes:
       # Postgres 18+: o dado fica em /var/lib/postgresql/<versão>; monte o diretório pai.
       - pgdata:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -p ${POSTGRES_PORT:-5432} -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -75,7 +77,7 @@ services:
       - "127.0.0.1:3100:3100"
     environment:
       # Histórico, consultas salvas e perfis (dados reais do ERP): só no volume `pgdata`, nunca no repositório.
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB}
       # Chave que cifra os segredos dos perfis: vem do `.env`, separada do banco.
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?defina ENCRYPTION_KEY no .env}
       # Assistente de IA: o Ollama do compose e os ajustes do preset (vazio = padrão do preset).
