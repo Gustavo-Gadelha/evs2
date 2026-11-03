@@ -1,4 +1,4 @@
-# SPEC — snk-assistant
+# SPEC — erp-assistant
 
 ## Objetivo
 
@@ -203,7 +203,7 @@ src/features/assistant/     index-protocol (eventos/estado do índice), assistan
 src/features/explorer/      explorer (orquestra a tela; page.tsx importa daqui), tabs (tipo e helpers das abas) e query-tabs (barra de abas)
 src/features/profiles/      profiles (tipos e cliente HTTP); components/profiles-dialog; server/: store (Prisma + cache decifrado em memória) e handlers profiles, profile-by-id, active
 prisma/                     `schema.prisma` (PostgreSQL; `state` e `result` em jsonb) e migrações (aplicadas por `prisma migrate deploy` no `pnpm dev` e pelo `entrypoint.sh` na subida do container)
-compose.yaml                serviços `postgres` (pgvector/pgvector:pg18, volume `pgdata`, healthcheck), `ollama` (volume `ollama`), `ollama-pull` e `snk-assistant`; lê o `.env`
+compose.yaml                serviços `postgres` (pgvector/pgvector:pg18, volume `pgdata`, healthcheck), `ollama` (volume `ollama`), `ollama-pull` e `erp-assistant`; lê o `.env`
 compose.gpu.yaml            reserva da GPU NVIDIA para o `ollama` (desktop); compose.cpu.yaml limita o `ollama` a 4 CPUs/8 GB
 scripts/seed-profile.mjs    `pnpm seed`: cria ou atualiza o perfil padrão a partir das `SANKHYA_PROFILE_*` do `.env` (ver "Perfil padrão")
 entrypoint.sh               valida `DATABASE_URL` e `ENCRYPTION_KEY`, aplica as migrations e executa o servidor (`exec`)

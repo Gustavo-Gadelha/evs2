@@ -1,4 +1,4 @@
-# snk-assistant
+# erp-assistant
 
 Builder visual de SQL Oracle, local e dev-only, que roda consultas no Sankhya (ERP) via `DbExplorerSP.executeQuery`; as credenciais ficam no servidor Next.js. Escopo e decisões: leia [`SPEC.md`](SPEC.md) antes de criar ou mudar qualquer feature.
 

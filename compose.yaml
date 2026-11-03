@@ -61,7 +61,7 @@ services:
         ollama pull "$$chat"
         ollama pull "$$AI_EMBED_MODEL"
 
-  snk-assistant:
+  erp-assistant:
     build:
       context: .
       target: runner

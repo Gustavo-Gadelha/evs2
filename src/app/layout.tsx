@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "snk-assistant",
+  title: "erp-assistant",
   description: "Explorador local da API Sankhya (dev-only).",
   robots: { index: false, follow: false },
 };
