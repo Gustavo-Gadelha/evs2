@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DatabaseIcon, ExternalLinkIcon, SendIcon, SquareIcon, Trash2Icon } from "lucide-react";
+import {
+  ArrowUpIcon,
+  ChevronRightIcon,
+  DatabaseIcon,
+  ExternalLinkIcon,
+  MessageSquareTextIcon,
+  SquareIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { useHighlightedCode } from "@/hooks/use-highlighted-code";
 import { Badge } from "@/components/ui/badge";
-import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import {
   CodeBlock,
@@ -19,8 +26,12 @@ import {
   CodeBlockLine,
   CodeBlockTitle,
 } from "@/components/ui/code-block";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
-import { Message, MessageContent } from "@/components/ui/message";
+import { Kbd } from "@/components/ui/kbd";
+import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
+import { Message, MessageAvatar, MessageContent } from "@/components/ui/message";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -29,6 +40,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
+import { Spinner } from "@/components/ui/spinner";
 import { streamChat } from "./client";
 import type { ChatMessage } from "./protocol";
 import { splitMessage } from "./sql-blocks";
@@ -97,6 +109,39 @@ function SqlBlock({
   );
 }
 
+// Atividade do agente, como as chamadas de ferramenta do Claude Code: aberta enquanto responde, recolhida depois.
+function AgentSteps({ steps, pending }: { steps: string[]; pending: boolean }) {
+  const [open, setOpen] = useState(pending);
+  const wasPending = useRef(pending);
+  useEffect(() => {
+    if (wasPending.current && !pending) setOpen(false);
+    wasPending.current = pending;
+  }, [pending]);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="group/steps flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+        <ChevronRightIcon className="size-3.5 transition-transform group-data-[panel-open]/steps:rotate-90" />
+        {steps.length} {steps.length === 1 ? "etapa" : "etapas"}
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <ol className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
+          {steps.map((step, index) => {
+            const current = pending && index === steps.length - 1;
+            return (
+              <li key={index} className="flex items-center gap-2">
+                <span className="font-mono">⎿</span>
+                {current ? <Spinner className="size-3" /> : <span>✓</span>}
+                <span className={current ? "shimmer text-foreground" : ""}>{step}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 function AssistantMessage({
   message,
   pending,
@@ -109,20 +154,20 @@ function AssistantMessage({
   onOpenInNewTab: (sql: string) => void;
 }) {
   const parts = splitMessage(message.content);
+  const hasSteps = !!message.steps?.length;
   return (
     <Message>
-      <MessageContent>
-        {pending && message.steps && message.steps.length > 0 && (
-          <ol className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-            {message.steps.map((step, index) => (
-              <li key={index} className={index === message.steps!.length - 1 ? "text-foreground" : ""}>
-                {index === message.steps!.length - 1 ? "▸ " : "✓ "}
-                {step}
-              </li>
-            ))}
-          </ol>
+      <MessageAvatar className="font-mono text-sm leading-5">
+        <span className={pending ? "shimmer" : "text-primary"}>●</span>
+      </MessageAvatar>
+      <MessageContent className="gap-2 text-sm">
+        {hasSteps && <AgentSteps steps={message.steps!} pending={pending} />}
+        {parts.length === 0 && pending && !hasSteps && (
+          <p className="flex items-center gap-2 text-muted-foreground">
+            <Spinner className="size-3.5" />
+            <span className="shimmer">Pensando…</span>
+          </p>
         )}
-        {parts.length === 0 && pending && !message.steps?.length && <p className="text-muted-foreground">Pensando…</p>}
         {parts.map((part, index) =>
           part.kind === "text" ? (
             <p key={index} className="whitespace-pre-wrap">
@@ -138,6 +183,25 @@ function AssistantMessage({
             />
           ),
         )}
+        {message.interrupted && (
+          <Marker>
+            <MarkerIcon>
+              <SquareIcon />
+            </MarkerIcon>
+            <MarkerContent>Interrompido</MarkerContent>
+          </Marker>
+        )}
+      </MessageContent>
+    </Message>
+  );
+}
+
+function UserMessage({ message }: { message: ChatMessage }) {
+  return (
+    <Message>
+      <MessageContent className="w-full flex-row gap-2 rounded-md border-l-2 border-primary bg-muted px-3 py-2 text-sm">
+        <span className="font-mono text-muted-foreground">›</span>
+        <span className="min-w-0 whitespace-pre-wrap">{message.content}</span>
       </MessageContent>
     </Message>
   );
@@ -198,11 +262,12 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
       }
     } finally {
       // Resposta vazia (erro antes do primeiro pedaço ou interrupção imediata) não fica na conversa;
-      // as etapas só valem enquanto a resposta chega.
+      // as etapas ficam (recolhidas) e uma resposta parada pelo usuário é marcada como interrompida.
+      const interrupted = controller.signal.aborted;
       onChatChange(tabId, (current) =>
         current
           .filter((message) => message.id !== reply.id || message.content)
-          .map((message) => (message.id === reply.id ? { ...message, steps: undefined } : message)),
+          .map((message) => (message.id === reply.id && interrupted ? { ...message, interrupted: true } : message)),
       );
       abort.current = null;
       setBusy(false);
@@ -212,10 +277,12 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
   const lastId = chat[chat.length - 1]?.id;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex items-center gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex items-center gap-2 border-b border-border pb-2">
         <span className="label">Assistente</span>
-        <Badge className="h-4 rounded px-1.5 text-[10px] uppercase">ollama local</Badge>
+        <Badge variant="outline" className="h-4 rounded px-1.5 text-[10px] uppercase">
+          ollama local
+        </Badge>
         <Button
           className="ml-auto"
           variant="ghost"
@@ -231,26 +298,43 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
         </Button>
       </div>
 
-      <div className="relative flex min-h-80 flex-1 rounded-lg border border-border bg-card">
+      <div className="relative flex min-h-80 flex-1">
         <MessageScrollerProvider autoScroll>
           <MessageScroller>
-            <MessageScrollerViewport className="p-3">
-              <MessageScrollerContent>
+            <MessageScrollerViewport>
+              <MessageScrollerContent className="gap-5">
                 {chat.length === 0 && (
-                  <p className="m-auto max-w-sm text-center text-sm text-muted-foreground">
-                    Descreva o que você precisa e o assistente sugere o SQL, usando o dicionário do Sankhya.
-                  </p>
+                  <Empty className="m-auto">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <MessageSquareTextIcon />
+                      </EmptyMedia>
+                      <EmptyTitle>Peça uma consulta</EmptyTitle>
+                      <EmptyDescription>
+                        Descreva o que você precisa e o assistente sugere o SQL, usando o dicionário do Sankhya.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <div className="flex flex-col items-stretch">
+                      {SUGGESTIONS.map((suggestion) => (
+                        <Button
+                          key={suggestion}
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          className="justify-start text-muted-foreground"
+                          disabled={busy}
+                          onClick={() => void send(suggestion)}
+                        >
+                          <span className="font-mono">›</span> {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  </Empty>
                 )}
                 {chat.map((message) => (
                   <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === "user"}>
                     {message.role === "user" ? (
-                      <Message align="end">
-                        <MessageContent>
-                          <Bubble align="end" variant="tinted">
-                            <BubbleContent className="whitespace-pre-wrap">{message.content}</BubbleContent>
-                          </Bubble>
-                        </MessageContent>
-                      </Message>
+                      <UserMessage message={message} />
                     ) : (
                       <AssistantMessage
                         message={message}
@@ -268,24 +352,6 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
         </MessageScrollerProvider>
       </div>
 
-      {chat.length === 0 && (
-        <div className="flex scroll-fade-x gap-2 overflow-x-auto overscroll-x-contain">
-          {SUGGESTIONS.map((suggestion) => (
-            <Button
-              key={suggestion}
-              variant="outline"
-              size="sm"
-              type="button"
-              className="shrink-0"
-              disabled={busy}
-              onClick={() => void send(suggestion)}
-            >
-              {suggestion}
-            </Button>
-          ))}
-        </div>
-      )}
-
       <form
         ref={form}
         onSubmit={(event) => {
@@ -294,32 +360,54 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
         }}
       >
         <InputGroup>
+          <InputGroupAddon align="inline-start">
+            <span className="font-mono">›</span>
+          </InputGroupAddon>
           <InputGroupTextarea
             className="max-h-40 min-h-9"
             rows={1}
             value={input}
-            placeholder="Descreva a consulta… (Enter envia, Shift+Enter quebra a linha)"
+            placeholder="Descreva a consulta…"
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+              if (event.key === "Escape" && busy) {
+                abort.current?.abort();
+              } else if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
                 event.preventDefault();
                 form.current?.requestSubmit();
               }
             }}
           />
-          <InputGroupAddon align="block-end">
-            <span className="text-xs text-muted-foreground">Respostas de IA podem errar: revise o SQL.</span>
+          <InputGroupAddon align="inline-end">
             {busy ? (
-              <InputGroupButton className="ml-auto" variant="outline" size="sm" onClick={() => abort.current?.abort()}>
-                <SquareIcon /> Parar
+              <InputGroupButton variant="outline" size="icon-sm" aria-label="Parar" onClick={() => abort.current?.abort()}>
+                <SquareIcon />
               </InputGroupButton>
             ) : (
-              <InputGroupButton className="ml-auto" type="submit" variant="default" size="sm" disabled={!input.trim()}>
-                <SendIcon /> Enviar
+              <InputGroupButton
+                type="submit"
+                variant="default"
+                size="icon-sm"
+                aria-label="Enviar"
+                disabled={!input.trim()}
+              >
+                <ArrowUpIcon />
               </InputGroupButton>
             )}
           </InputGroupAddon>
         </InputGroup>
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span>
+            <Kbd>Enter</Kbd> envia
+          </span>
+          <span>
+            <Kbd>Shift</Kbd>+<Kbd>Enter</Kbd> nova linha
+          </span>
+          <span>
+            <Kbd>Esc</Kbd> para
+          </span>
+          <span className="ml-auto">Respostas de IA podem errar: revise o SQL.</span>
+        </p>
       </form>
     </div>
   );

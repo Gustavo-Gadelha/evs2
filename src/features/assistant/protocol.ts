@@ -2,8 +2,14 @@
 
 export type ChatRole = "user" | "assistant";
 
-// `steps`: etapas do agente da resposta em andamento (só no navegador; não vão ao servidor).
-export type ChatMessage = { id: string; role: ChatRole; content: string; steps?: string[] };
+// `steps` (etapas do agente) e `interrupted` (resposta parada pelo usuário) existem só no navegador; não vão ao servidor.
+export type ChatMessage = {
+  id: string;
+  role: ChatRole;
+  content: string;
+  steps?: string[];
+  interrupted?: boolean;
+};
 
 // Corpo de `POST /api/assistant/chat`. O agente responde à última mensagem do usuário, usando o SQL atual da aba
 // como contexto; `error` é a mensagem do Oracle quando o pedido é corrigir esse SQL ("Corrigir com IA").
