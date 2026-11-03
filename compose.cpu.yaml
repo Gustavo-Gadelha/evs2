@@ -1,0 +1,6 @@
+# Simula o notebook (só CPU, ~4 núcleos, ~8 GB) no desktop, para medir o preset `cpu`.
+# Use com o compose.yaml e sem o compose.gpu.yaml, com AI_PRESET=cpu.
+services:
+  ollama:
+    cpus: "4"
+    mem_limit: 8g

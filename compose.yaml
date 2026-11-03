@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:18-alpine
+    # Com pgvector (busca por embeddings do assistente). Imagem Debian/glibc: ao trocar a partir da alpine, restaure
+    # de um pg_dump em volume novo (ver README), senão a collation do volume antigo fica inconsistente.
+    image: pgvector/pgvector:pg18
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
@@ -17,6 +19,48 @@ services:
       timeout: 3s
       retries: 20
 
+  ollama:
+    image: ollama/ollama:0.40.13
+    environment:
+      # Mantém o modelo na memória entre perguntas (recarregar custa caro, sobretudo na CPU).
+      OLLAMA_KEEP_ALIVE: 30m
+      OLLAMA_NUM_PARALLEL: "1"
+      # Chat + embeddings.
+      OLLAMA_MAX_LOADED_MODELS: "2"
+    ports:
+      # Só loopback, para o `pnpm dev` (que roda no host); nunca "11434:11434".
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Baixa os modelos do preset e termina; o app só sobe depois.
+  ollama-pull:
+    image: ollama/ollama:0.40.13
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      OLLAMA_HOST: ollama:11434
+      AI_PRESET: ${AI_PRESET:-gpu}
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-}
+      AI_EMBED_MODEL: ${AI_EMBED_MODEL:-bge-m3}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        chat="$${AI_CHAT_MODEL:-}"
+        if [ -z "$$chat" ]; then
+          if [ "$$AI_PRESET" = "cpu" ]; then chat=qwen3:4b; else chat=qwen3:8b; fi
+        fi
+        ollama pull "$$chat"
+        ollama pull "$$AI_EMBED_MODEL"
+
   snk-assistant:
     build:
       context: .
@@ -24,6 +68,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
     ports:
       # Só loopback: nunca "3100:3100", que exporia a ferramenta (e a sessão no Sankhya) na rede.
       - "127.0.0.1:3100:3100"
@@ -32,6 +78,19 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # Chave que cifra os segredos dos perfis: vem do `.env`, separada do banco.
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?defina ENCRYPTION_KEY no .env}
+      # Assistente de IA: o Ollama do compose e os ajustes do preset (vazio = padrão do preset).
+      OLLAMA_BASE_URL: http://ollama:11434
+      AI_PRESET: ${AI_PRESET:-gpu}
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-}
+      AI_THINK: ${AI_THINK:-}
+      AI_EMBED_MODEL: ${AI_EMBED_MODEL:-}
+      AI_NUM_CTX: ${AI_NUM_CTX:-}
+      AI_TOP_TABLES: ${AI_TOP_TABLES:-}
+      AI_MAX_COLUMNS_PER_TABLE: ${AI_MAX_COLUMNS_PER_TABLE:-}
+      AI_MAX_STEPS: ${AI_MAX_STEPS:-}
+      AI_MAX_FIX_ATTEMPTS: ${AI_MAX_FIX_ATTEMPTS:-}
+      AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-}
 
 volumes:
   pgdata:
+  ollama:

@@ -1,0 +1,10 @@
+# Acrescenta a GPU NVIDIA ao Ollama (desktop). Use junto com o compose.yaml; o notebook usa só o compose.yaml.
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
