@@ -6,9 +6,10 @@ import type { AiProvider } from "../protocol";
 import { aiConfig } from "./config";
 import { chatModel } from "./model";
 import { searchTables } from "./search";
-import { agentTools, validateOnOracle, type AgentTrace } from "./tools";
+import { agentTools, type AgentTrace } from "./tools";
 import { AiTimeoutError, AiUnavailableError } from "@/lib/ai/errors";
 import { buildRetryPrompt, buildSystemPrompt, buildUserPrompt, type LimitStyle } from "@/lib/ai/prompt";
+import { checkReadOnly } from "@/lib/sql/read-only";
 import { cleanSql, extractSql, stripThinking } from "@/lib/ai/sql-extract";
 import { log, redactText } from "@/features/sankhya/server/redact";
 
@@ -74,7 +75,7 @@ export async function runAgent(input: AgentInput): Promise<AgentResult> {
   const timeout = AbortSignal.timeout(config.timeoutMs);
   const signal = AbortSignal.any([input.signal, timeout]);
 
-  const trace: AgentTrace = { knownTables: new Set(), validated: new Map(), lastSql: null, emit: input.onStep };
+  const trace: AgentTrace = { knownTables: new Set(), emit: input.onStep };
   let steps = 0;
   let inputTokens = 0;
   let outputTokens = 0;
@@ -109,7 +110,6 @@ export async function runAgent(input: AgentInput): Promise<AgentResult> {
 
     for (let attempt = 0; attempt <= config.maxFixAttempts; attempt++) {
       attempts = attempt + 1;
-      trace.lastSql = null;
       input.onStep(attempt === 0 ? "Gerando o SQL" : `Tentativa ${attempts}: corrigindo o SQL`);
 
       const result = await generateText({
@@ -130,13 +130,6 @@ export async function runAgent(input: AgentInput): Promise<AgentResult> {
 
       text = stripThinking(result.text).trim();
       sql = extractSql(text);
-      // Resposta final em prosa depois de tentar validar um SQL: o SQL em ajuste é o que vale.
-      if (!sql && trace.lastSql) {
-        sql = trace.lastSql;
-        text = `\`\`\`sql
-${sql}
-\`\`\``;
-      }
       // Sem ferramentas no último passo, o modelo às vezes despeja a chamada como texto: não é resposta.
       if (!sql && /<tool_call>/i.test(text)) {
         text = "";
@@ -154,11 +147,11 @@ ${sql}
         break;
       }
 
-      input.onStep("Validando o SQL final");
-      const known = trace.validated.get(cleanSql(sql));
-      validationError = known !== undefined ? known : await validateOnOracle(sql);
+      // Só a trava de leitura, estática: o assistente nunca executa o SQL, quem roda é o usuário no editor.
+      const check = checkReadOnly(cleanSql(sql));
+      validationError = check.ok ? null : check.reason;
       if (validationError === null) break;
-      input.onStep(`O Oracle recusou: ${redactText(validationError).slice(0, 160)}`);
+      input.onStep(`A trava de leitura recusou: ${redactText(validationError).slice(0, 160)}`);
 
       messages.push({ role: "assistant", content: text }, { role: "user", content: buildRetryPrompt(validationError) });
     }

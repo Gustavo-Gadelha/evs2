@@ -31,7 +31,8 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
-import { Message, MessageAvatar, MessageContent } from "@/components/ui/message";
+import { Message, MessageContent } from "@/components/ui/message";
+import { Markdown } from "./components/markdown";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -158,10 +159,7 @@ function AssistantMessage({
   const hasSteps = !!message.steps?.length;
   return (
     <Message>
-      <MessageAvatar className="font-mono text-sm leading-5">
-        <span className={pending ? "shimmer" : "text-primary"}>●</span>
-      </MessageAvatar>
-      <MessageContent className="gap-2 text-sm">
+      <MessageContent className="gap-3">
         {hasSteps && <AgentSteps steps={message.steps!} pending={pending} />}
         {parts.length === 0 && pending && !hasSteps && (
           <p className="flex items-center gap-2 text-muted-foreground">
@@ -171,9 +169,7 @@ function AssistantMessage({
         )}
         {parts.map((part, index) =>
           part.kind === "text" ? (
-            <p key={index} className="whitespace-pre-wrap">
-              {part.text}
-            </p>
+            <Markdown key={index}>{part.text}</Markdown>
           ) : (
             <SqlBlock
               key={index}
@@ -199,9 +195,8 @@ function AssistantMessage({
 
 function UserMessage({ message }: { message: ChatMessage }) {
   return (
-    <Message>
-      <MessageContent className="w-full flex-row gap-2 rounded-md border-l-2 border-primary bg-muted px-3 py-2 text-sm">
-        <span className="font-mono text-muted-foreground">›</span>
+    <Message align="end">
+      <MessageContent className="w-fit max-w-[85%] rounded-2xl bg-muted px-4 py-2.5 text-[15px] leading-7">
         <span className="min-w-0 whitespace-pre-wrap">{message.content}</span>
       </MessageContent>
     </Message>
@@ -345,30 +340,30 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
         <MessageScrollerProvider autoScroll>
           <MessageScroller>
             <MessageScrollerViewport>
-              <MessageScrollerContent className="gap-5">
+              <MessageScrollerContent className="gap-7">
                 {chat.length === 0 && (
                   <Empty className="m-auto">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
                         <MessageSquareTextIcon />
                       </EmptyMedia>
-                      <EmptyTitle>Peça uma consulta</EmptyTitle>
+                      <EmptyTitle className="font-serif text-xl">Peça uma consulta</EmptyTitle>
                       <EmptyDescription>
                         Descreva o que você precisa e o assistente sugere o SQL, usando o dicionário do Sankhya.
                       </EmptyDescription>
                     </EmptyHeader>
-                    <div className="flex flex-col items-stretch">
+    <div className="flex flex-wrap items-center justify-center gap-2">
                       {SUGGESTIONS.map((suggestion) => (
                         <Button
                           key={suggestion}
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           type="button"
-                          className="justify-start text-muted-foreground"
+                          className="h-auto rounded-full px-3 py-1.5 text-muted-foreground whitespace-normal"
                           disabled={busy}
                           onClick={() => void send(suggestion)}
                         >
-                          <span className="font-mono">›</span> {suggestion}
+                          {suggestion}
                         </Button>
                       ))}
                     </div>
@@ -402,15 +397,12 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
           void send(input);
         }}
       >
-        <InputGroup>
-          <InputGroupAddon align="inline-start">
-            <span className="font-mono">›</span>
-          </InputGroupAddon>
+        <InputGroup className="items-end rounded-2xl bg-card py-1 shadow-sm">
           <InputGroupTextarea
-            className="max-h-40 min-h-9"
+            className="max-h-48 min-h-11 px-4 text-[15px]"
             rows={1}
             value={input}
-            placeholder="Descreva a consulta…"
+            placeholder="Como posso ajudar?"
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Escape" && busy) {
@@ -423,11 +415,18 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
           />
           <InputGroupAddon align="inline-end">
             {busy ? (
-              <InputGroupButton variant="outline" size="icon-sm" aria-label="Parar" onClick={() => abort.current?.abort()}>
+              <InputGroupButton
+                className="rounded-full"
+                variant="outline"
+                size="icon-sm"
+                aria-label="Parar"
+                onClick={() => abort.current?.abort()}
+              >
                 <SquareIcon />
               </InputGroupButton>
             ) : (
               <InputGroupButton
+                className="rounded-full"
                 type="submit"
                 variant="default"
                 size="icon-sm"
