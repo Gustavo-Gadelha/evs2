@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { IndexEvent, IndexStatus } from "../index-protocol";
 
-type Status = { preset: string; chatModel: string; ollama: { reachable: boolean; chatModelReady: boolean } };
+type Status = { preset: string; chatModel: string; googleChatModel: string; ollama: { reachable: boolean; chatModelReady: boolean } };
 
 // Selo do header: preset e modelo ativos e o estado do índice do dicionário (ausente, desatualizado ou pronto),
 // com o botão para indexar. A indexação é cara na CPU, por isso nunca começa sozinha.

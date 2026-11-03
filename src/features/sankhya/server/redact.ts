@@ -10,7 +10,7 @@ const SECRET_HEADERS = new Set(["appkey", "token", "username", "password", "auth
 
 function secretValues(): string[] {
   // Segredos de todos os perfis, não só do ativo: nada vaza em log ao trocar de perfil.
-  const values = [...knownSecrets(), authState().bearerToken];
+  const values = [...knownSecrets(), authState().bearerToken, process.env.GOOGLE_GENERATIVE_AI_API_KEY];
   return values.filter((value): value is string => Boolean(value));
 }
 

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 import { checkReadOnly } from "@/lib/sql/read-only";
 import { useHighlightedCode } from "@/hooks/use-highlighted-code";
-import { Badge } from "@/components/ui/badge";
+import { OptionMenu } from "@/components/option-menu";
 import { Button } from "@/components/ui/button";
 import {
   CodeBlock,
@@ -42,7 +42,8 @@ import {
 } from "@/components/ui/message-scroller";
 import { Spinner } from "@/components/ui/spinner";
 import { streamChat } from "./client";
-import type { ChatMessage } from "./protocol";
+import { api } from "@/lib/api";
+import type { AiProvider, ChatMessage } from "./protocol";
 import { splitMessage } from "./sql-blocks";
 
 type Props = {
@@ -207,11 +208,47 @@ function UserMessage({ message }: { message: ChatMessage }) {
   );
 }
 
+const PROVIDER_KEY = "erp-assistant:ai-provider";
+const PROVIDER_LABELS: Record<AiProvider, string> = { ollama: "Ollama (local)", google: "Google (Gemini)" };
+
+function loadProvider(): AiProvider {
+  try {
+    return localStorage.getItem(PROVIDER_KEY) === "google" ? "google" : "ollama";
+  } catch {
+    return "ollama";
+  }
+}
+
 export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpenInNewTab, limitStyle, fix }: Props) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const abort = useRef<AbortController | null>(null);
   const form = useRef<HTMLFormElement>(null);
+  const [provider, setProvider] = useState<AiProvider>("ollama");
+
+  // Lido depois da montagem para não divergir do HTML do servidor.
+  useEffect(() => setProvider(loadProvider()), []);
+
+  async function changeProvider(next: AiProvider) {
+    if (next === "google") {
+      const status = await api<{ googleConfigured: boolean }>("/api/assistant/status").catch(() => null);
+      if (!status?.googleConfigured) {
+        toast.warning("Google não configurado", {
+          id: "assistant-google",
+          description: "Defina GOOGLE_GENERATIVE_AI_API_KEY no .env e reinicie o servidor.",
+        });
+        return;
+      }
+      toast.warning("Google ativo", {
+        id: "assistant-google",
+        description: "Nomes e descrições de tabelas e colunas do dicionário serão enviados ao Google. Linhas de resultado, nunca.",
+      });
+    }
+    setProvider(next);
+    try {
+      localStorage.setItem(PROVIDER_KEY, next);
+    } catch {}
+  }
 
   // Trocar de aba de consulta desmonta o painel: a resposta em andamento é interrompida.
   useEffect(() => () => abort.current?.abort(), []);
@@ -238,7 +275,7 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
     setBusy(true);
     try {
       await streamChat(
-        { messages: history, sql, limitStyle, error },
+        { messages: history, sql, limitStyle, error, provider },
         controller.signal,
         (delta) =>
           onChatChange(tabId, (current) =>
@@ -280,9 +317,15 @@ export function AssistantPanel({ tabId, chat, sql, onChatChange, onUseSql, onOpe
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <div className="flex items-center gap-2 border-b border-border pb-2">
         <span className="label">Assistente</span>
-        <Badge variant="outline" className="h-4 rounded px-1.5 text-[10px] uppercase">
-          ollama local
-        </Badge>
+        <OptionMenu
+          label="Provedor do assistente"
+          value={provider}
+          options={(["ollama", "google"] as const).map((value) => ({ value, label: PROVIDER_LABELS[value] }))}
+          onChange={(value) => void changeProvider(value)}
+          size="xs"
+          mono={false}
+          disabled={busy}
+        />
         <Button
           className="ml-auto"
           variant="ghost"

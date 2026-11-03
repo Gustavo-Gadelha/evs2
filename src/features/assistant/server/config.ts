@@ -35,12 +35,14 @@ const text = z.preprocess(blank, z.string().trim().min(1).optional());
 const int = z.preprocess(blank, z.coerce.number().int().positive().optional());
 // Para contagens em que 0 é válido (AI_MAX_FIX_ATTEMPTS=0: sem tentativa de correção automática).
 const nonNegativeInt = z.preprocess(blank, z.coerce.number().int().nonnegative().optional());
-const bool =z.preprocess(blank, z.enum(["true", "false"]).optional());
+const bool = z.preprocess(blank, z.enum(["true", "false"]).optional());
 
 const envSchema = z.object({
   AI_PRESET: z.preprocess(blank, z.enum(["gpu", "cpu"]).default("gpu")),
   OLLAMA_BASE_URL: z.preprocess(blank, z.url().default("http://127.0.0.1:11434")),
   AI_CHAT_MODEL: text,
+  AI_GOOGLE_CHAT_MODEL: text,
+  GOOGLE_GENERATIVE_AI_API_KEY: text,
   AI_THINK: bool,
   AI_EMBED_MODEL: text,
   AI_NUM_CTX: int,
@@ -55,6 +57,9 @@ export type AiConfig = {
   preset: keyof typeof PRESETS;
   ollamaBaseUrl: string;
   chatModel: string;
+  // Gemini (opt-in, só o chat). A chave fica só no servidor: aqui vai apenas se existe.
+  googleChatModel: string;
+  googleConfigured: boolean;
   think: boolean;
   embedModel: string;
   numCtx: number;
@@ -74,6 +79,8 @@ export function aiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
     preset: e.AI_PRESET,
     ollamaBaseUrl: e.OLLAMA_BASE_URL.replace(/\/+$/, ""),
     chatModel: e.AI_CHAT_MODEL ?? p.chatModel,
+    googleChatModel: e.AI_GOOGLE_CHAT_MODEL ?? "gemini-2.5-flash",
+    googleConfigured: Boolean(e.GOOGLE_GENERATIVE_AI_API_KEY),
     think: e.AI_THINK ? e.AI_THINK === "true" : p.think,
     embedModel: e.AI_EMBED_MODEL ?? p.embedModel,
     numCtx: e.AI_NUM_CTX ?? p.numCtx,

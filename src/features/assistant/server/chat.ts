@@ -6,7 +6,8 @@ import { runAgent } from "./agent";
 import { aiConfig } from "./config";
 import { erpKeyOfActiveProfile, requireUsableIndex } from "./index-store";
 import { assertOllamaReady } from "./ollama";
-import type { ChatEvent } from "../protocol";
+import { AI_PROVIDERS, type ChatEvent } from "../protocol";
+import { AiUnavailableError } from "@/lib/ai/errors";
 import { localOnly } from "@/features/sankhya/server/local-only";
 import { redactText } from "@/features/sankhya/server/redact";
 
@@ -18,6 +19,7 @@ const bodySchema = z.object({
   sql: z.string().max(100_000),
   limitStyle: z.enum(["fetch", "rownum"]).default("fetch"),
   error: z.string().max(5_000).optional(),
+  provider: z.enum(AI_PROVIDERS).default("ollama"),
 });
 
 // Pergunta de até ~2 KB: o resto da conversa fica só na tela (cada token a mais custa na CPU).
@@ -35,7 +37,7 @@ export const POST = localOnly(async (req) => {
       { status: 400 },
     );
   }
-  const { messages, sql, limitStyle, error } = parsed.data;
+  const { messages, sql, limitStyle, error, provider } = parsed.data;
   const question =
     [...messages]
       .reverse()
@@ -51,7 +53,11 @@ export const POST = localOnly(async (req) => {
   // Falhas de pré-condição saem como resposta de erro tipada (503/409), antes de abrir o stream.
   const config = aiConfig();
   await requireUsableIndex(await erpKeyOfActiveProfile());
-  await assertOllamaReady([config.chatModel, config.embedModel]);
+  // Com o Google só o chat sai do Ollama: a busca no dicionário continua usando o embedding local.
+  if (provider === "google" && !config.googleConfigured) {
+    throw new AiUnavailableError("Chave do Google não configurada. Defina GOOGLE_GENERATIVE_AI_API_KEY no .env.");
+  }
+  await assertOllamaReady(provider === "google" ? [config.embedModel] : [config.chatModel, config.embedModel]);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -65,6 +71,7 @@ export const POST = localOnly(async (req) => {
           sql,
           error,
           limitStyle,
+          provider,
           signal: req.signal,
           onStep: (text) => send({ type: "step", text }),
         });

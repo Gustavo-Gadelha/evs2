@@ -2,6 +2,7 @@ import "server-only";
 
 import { generateText, isStepCount, type ModelMessage } from "ai";
 
+import type { AiProvider } from "../protocol";
 import { aiConfig } from "./config";
 import { chatModel } from "./model";
 import { searchTables } from "./search";
@@ -16,6 +17,7 @@ export type AgentInput = {
   sql?: string;
   error?: string;
   limitStyle: LimitStyle;
+  provider: AiProvider;
   signal: AbortSignal;
   // Etapas legíveis para a interface (para a espera na CPU parecer andamento e não travamento).
   onStep: (text: string) => void;
@@ -32,11 +34,23 @@ export type AgentResult = {
   metrics: { ms: number; embedMs: number; steps: number; inputTokens: number; outputTokens: number };
 };
 
-function mapError(err: unknown, timeout: AbortSignal, userSignal: AbortSignal): unknown {
+function mapError(err: unknown, timeout: AbortSignal, userSignal: AbortSignal, provider: AiProvider): unknown {
   if (userSignal.aborted) return err;
   const { timeoutMs, ollamaBaseUrl, chatModel: model } = aiConfig();
   if (timeout.aborted) return new AiTimeoutError(`A IA não terminou em ${timeoutMs} ms.`);
   const text = `${err instanceof Error ? err.message : ""} ${(err as { cause?: { code?: string } })?.cause?.code ?? ""}`;
+  if (provider === "google") {
+    if (/API key|401|403|PERMISSION_DENIED|UNAUTHENTICATED/i.test(text)) {
+      return new AiUnavailableError("Google recusou a chave (GOOGLE_GENERATIVE_AI_API_KEY inválida ou sem permissão).");
+    }
+    if (/429|quota|RESOURCE_EXHAUSTED|rate limit/i.test(text)) {
+      return new AiUnavailableError("Cota ou limite de requisições do Google esgotado. Tente de novo em instantes.");
+    }
+    if (/ECONNREFUSED|fetch failed|ENOTFOUND|Cannot connect/i.test(text)) {
+      return new AiUnavailableError("Não consegui acessar a API do Google. Verifique a conexão.");
+    }
+    return err;
+  }
   if (/ECONNREFUSED|fetch failed|ENOTFOUND|Cannot connect/i.test(text)) {
     return new AiUnavailableError(
       `Ollama indisponível em ${ollamaBaseUrl}. Suba o serviço (docker compose up -d ollama).`,
@@ -73,7 +87,7 @@ export async function runAgent(input: AgentInput): Promise<AgentResult> {
       `Tabelas candidatas: ${retrieval.tables.map((t) => t.ref).join(", ") || "nenhuma"} (embedding ${retrieval.embedMs} ms)`,
     );
 
-    const { model, providerOptions } = chatModel();
+    const { model, providerOptions } = chatModel(input.provider);
     const messages: ModelMessage[] = [
       {
         role: "user",
@@ -157,7 +171,7 @@ ${sql}
       outputTokens,
     };
     log.info(
-      `[assistant] preset=${config.preset} model=${config.chatModel} steps=${steps} attempts=${attempts} ` +
+      `[assistant] preset=${config.preset} provider=${input.provider} model=${input.provider === "google" ? config.googleChatModel : config.chatModel} steps=${steps} attempts=${attempts} ` +
         `valid=${sql ? validationError === null : "n/a"} in=${inputTokens} out=${outputTokens} ms=${metrics.ms}`,
     );
 
@@ -171,6 +185,6 @@ ${sql}
       metrics,
     };
   } catch (err) {
-    throw mapError(err, timeout, input.signal);
+    throw mapError(err, timeout, input.signal, input.provider);
   }
 }
