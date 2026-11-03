@@ -46,3 +46,6 @@ next-env.d.ts
 /src/lib/db/generated
 /prisma/*.db*
 
+
+# Índice do assistente exportado por `pnpm ai:export`
+/ai-export/
